@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run build:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm install:*)",
+      "Bash(npm audit fix:*)",
+      "Bash(node --version:*)",
+      "Bash(timeout 10 npm run dev:*)",
+      "Bash(npm run dev:*)",
+      "Bash(pkill:*)",
+      "Bash(chmod:*)",
+      "Bash(java -version:*)",
+      "Bash(/usr/libexec/java_home:*)",
+      "Bash(brew list:*)",
+      "Bash(brew install:*)",
+      "Bash(export JAVA_HOME=/opt/homebrew/opt/openjdk@17)",
+      "Bash(export PATH=\"$JAVA_HOME/bin:$PATH\")",
+      "Bash(pg_isready:*)",
+      "Bash(brew services:*)",
+      "Bash(gradle wrapper:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill -9)",
+      "Bash(curl:*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzM4NCJ9.eyJzdWIiOiJjZTVmNTBjOC0zZjA1LTRhMmEtOTA3Ny02N2QzOTJmM2I2ODAiLCJlbWFpbCI6InRlc3RAdGVzdC5jb20iLCJpYXQiOjE3Njg4NzIwNjMsImV4cCI6MTc2ODk1ODQ2M30.R2wm0-uDxfyrdJRGp1JCXVHEQ0wodtvSdw4oyTquCj74lun3YOMwi5KLFTsIWkU1\")",
+      "Bash(find:*)",
+      "Bash(gradle compileJava:*)"
+    ]
+  }
+}
