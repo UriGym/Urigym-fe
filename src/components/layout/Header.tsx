@@ -1,7 +1,8 @@
-import { Bell, LogIn, LogOut, User } from "lucide-react";
+import { LogIn, LogOut, Shield, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { NotificationBell } from "@/components/layout/NotificationBell";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,9 +15,11 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 interface HeaderProps {
   title?: string;
   showLocation?: boolean;
+  /** Label shown next to the title, e.g. the district of the current location. */
+  locationLabel?: string;
 }
 
-export const Header = ({ title = "우리짐", showLocation = true }: HeaderProps) => {
+export const Header = ({ title = "우리짐", showLocation = true, locationLabel }: HeaderProps) => {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -35,20 +38,17 @@ export const Header = ({ title = "우리짐", showLocation = true }: HeaderProps
           >
             {title}
           </h1>
-          {showLocation && (
+          {showLocation && locationLabel && (
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
               <span className="w-2 h-2 bg-accent rounded-full animate-pulse-soft" />
-              <span>강남구</span>
+              <span>{locationLabel}</span>
             </div>
           )}
         </div>
         <div className="flex items-center gap-2">
           {isAuthenticated ? (
             <>
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full" />
-              </Button>
+              <NotificationBell />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="rounded-full">
@@ -69,6 +69,18 @@ export const Header = ({ title = "우리짐", showLocation = true }: HeaderProps
                     <User className="mr-2 h-4 w-4" />
                     마이페이지
                   </DropdownMenuItem>
+                  {user?.role === 'OWNER' && (
+                    <DropdownMenuItem onClick={() => navigate('/owner')}>
+                      <Shield className="mr-2 h-4 w-4" />
+                      관장 대시보드
+                    </DropdownMenuItem>
+                  )}
+                  {user?.role === 'ADMIN' && (
+                    <DropdownMenuItem onClick={() => navigate('/admin')}>
+                      <Shield className="mr-2 h-4 w-4" />
+                      관리자 페이지
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="text-destructive">
                     <LogOut className="mr-2 h-4 w-4" />

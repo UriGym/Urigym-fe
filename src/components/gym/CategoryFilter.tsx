@@ -1,15 +1,20 @@
 import { cn } from "@/lib/utils";
 
-const categories = [
-  { id: "all", label: "전체", emoji: "🏋️" },
-  { id: "fitness", label: "헬스", emoji: "💪" },
-  { id: "crossfit", label: "크로스핏", emoji: "🔥" },
-  { id: "yoga", label: "요가", emoji: "🧘" },
-  { id: "pilates", label: "필라테스", emoji: "🤸" },
-  { id: "boxing", label: "복싱", emoji: "🥊" },
-  { id: "swimming", label: "수영", emoji: "🏊" },
-  { id: "martial", label: "무술", emoji: "🥋" },
-];
+/**
+ * The id doubles as the category value stored on a gym, so filtering matches
+ * exactly what owners pick when registering.
+ */
+export const GYM_CATEGORIES = [
+  { id: "헬스장", label: "헬스", emoji: "💪" },
+  { id: "크로스핏", label: "크로스핏", emoji: "🔥" },
+  { id: "요가", label: "요가", emoji: "🧘" },
+  { id: "필라테스", label: "필라테스", emoji: "🤸" },
+  { id: "복싱", label: "복싱", emoji: "🥊" },
+  { id: "수영장", label: "수영", emoji: "🏊" },
+  { id: "무술", label: "무술", emoji: "🥋" },
+] as const;
+
+const filters = [{ id: "all", label: "전체", emoji: "🏋️" }, ...GYM_CATEGORIES];
 
 interface CategoryFilterProps {
   selected: string;
@@ -19,7 +24,7 @@ interface CategoryFilterProps {
 export const CategoryFilter = ({ selected, onSelect }: CategoryFilterProps) => {
   return (
     <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-      {categories.map((category) => (
+      {filters.map((category) => (
         <button
           key={category.id}
           onClick={() => onSelect(category.id)}

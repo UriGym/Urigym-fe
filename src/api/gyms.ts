@@ -1,5 +1,12 @@
 import apiClient from './client';
-import type { GymResponse, PageResponse, ReviewResponse, AnnouncementResponse } from './types';
+import type {
+  AnnouncementResponse,
+  EventResponse,
+  GymResponse,
+  MembershipPlanResponse,
+  PageResponse,
+  ReviewResponse,
+} from './types';
 
 export const gymsApi = {
   // 체육관 목록 조회
@@ -7,6 +14,12 @@ export const gymsApi = {
     const response = await apiClient.get<PageResponse<GymResponse>>(
       `/gyms?page=${page}&size=${size}`
     );
+    return response.data;
+  },
+
+  // AI 추천 랭킹 조회
+  getRanked: async (limit = 5) => {
+    const response = await apiClient.get<GymResponse[]>(`/gyms/ranked?limit=${limit}`);
     return response.data;
   },
 
@@ -67,6 +80,18 @@ export const gymsApi = {
     const response = await apiClient.get<PageResponse<AnnouncementResponse>>(
       `/gyms/${gymId}/announcements?page=${page}&size=${size}`
     );
+    return response.data;
+  },
+
+  // 체육관 예정 이벤트 조회
+  getEvents: async (gymId: string) => {
+    const response = await apiClient.get<EventResponse[]>(`/gyms/${gymId}/events`);
+    return response.data;
+  },
+
+  // 회원권(기간별 가격) 조회
+  getMembershipPlans: async (gymId: string) => {
+    const response = await apiClient.get<MembershipPlanResponse[]>(`/gyms/${gymId}/membership-plans`);
     return response.data;
   },
 };

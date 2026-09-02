@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authApi } from '@/api/auth';
-import type { UserResponse, LoginRequest, SignupRequest } from '@/api/types';
+import type { UserResponse, LoginRequest, OAuthProviderName, SignupRequest } from '@/api/types';
 
 interface AuthContextType {
   user: UserResponse | null;
@@ -8,6 +8,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (data: LoginRequest) => Promise<void>;
   signup: (data: SignupRequest) => Promise<void>;
+  loginWithOAuth: (provider: OAuthProviderName, accessToken: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -42,6 +43,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(response.user);
   };
 
+  const loginWithOAuth = async (provider: OAuthProviderName, accessToken: string) => {
+    const response = await authApi.oauthLogin(provider, accessToken);
+    setUser(response.user);
+  };
+
   const logout = () => {
     authApi.logout();
     setUser(null);
@@ -55,6 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         login,
         signup,
+        loginWithOAuth,
         logout,
       }}
     >

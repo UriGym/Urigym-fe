@@ -1,5 +1,5 @@
 import apiClient from './client';
-import type { AuthResponse, LoginRequest, SignupRequest, UserResponse } from './types';
+import type { AuthResponse, LoginRequest, OAuthProviderName, SignupRequest, UserResponse } from './types';
 
 export const authApi = {
   // 회원가입
@@ -14,6 +14,15 @@ export const authApi = {
   // 로그인
   login: async (data: LoginRequest) => {
     const response = await apiClient.post<AuthResponse>('/auth/login', data);
+    if (response.data?.accessToken) {
+      apiClient.setToken(response.data.accessToken);
+    }
+    return response.data;
+  },
+
+  // 소셜 로그인 (카카오/네이버 SDK가 발급한 액세스 토큰으로 로그인 또는 자동 가입)
+  oauthLogin: async (provider: OAuthProviderName, accessToken: string) => {
+    const response = await apiClient.post<AuthResponse>(`/auth/oauth/${provider}`, { accessToken });
     if (response.data?.accessToken) {
       apiClient.setToken(response.data.accessToken);
     }

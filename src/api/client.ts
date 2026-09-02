@@ -73,8 +73,45 @@ class ApiClient {
     });
   }
 
+  async patch<T>(endpoint: string, body?: unknown): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, {
+      method: 'PATCH',
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  }
+
   async delete<T>(endpoint: string): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { method: 'DELETE' });
+  }
+
+  /** Multipart upload — the browser sets its own Content-Type boundary. */
+  async upload<T>(endpoint: string, file: File): Promise<ApiResponse<T>> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const headers: Record<string, string> = {};
+    if (this.token) {
+      headers.Authorization = `Bearer ${this.token}`;
+    }
+
+    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || '파일 업로드에 실패했습니다.');
+    }
+    return data;
+  }
+
+  /** Absolute URL for a stored file path such as "/files/abc.png". */
+  fileUrl(path?: string | null): string | undefined {
+    if (!path) return undefined;
+    if (path.startsWith('http')) return path;
+    return `${this.baseUrl.replace(/\/api$/, '')}${path}`;
   }
 }
 

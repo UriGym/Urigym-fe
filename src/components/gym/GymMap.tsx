@@ -1,9 +1,11 @@
-import { useState } from "react";
-import { MapPin, Navigation } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { MapPin, Navigation, AlertTriangle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { loadKakaoMaps, isKakaoKeyConfigured } from "@/lib/kakaoMap";
+import type { Coordinates } from "@/hooks/useGeolocation";
 
-interface GymMarker {
+export interface GymMarker {
   id: string;
   name: string;
   lat: number;
@@ -13,89 +15,164 @@ interface GymMarker {
 
 interface GymMapProps {
   markers?: GymMarker[];
+  center: Coordinates;
   onMarkerClick?: (id: string) => void;
+  onRecenter?: () => void;
   className?: string;
 }
 
-export const GymMap = ({ markers = [], onMarkerClick, className }: GymMapProps) => {
-  const [selectedMarker, setSelectedMarker] = useState<string | null>(null);
+export const GymMap = ({ markers = [], center, onMarkerClick, onRecenter, className }: GymMapProps) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<kakao.maps.Map | null>(null);
+  const overlaysRef = useRef<kakao.maps.CustomOverlay[]>([]);
+  // Kept in a ref so re-rendering markers doesn't need to re-create the map.
+  const onMarkerClickRef = useRef(onMarkerClick);
+  onMarkerClickRef.current = onMarkerClick;
 
-  const handleMarkerClick = (id: string) => {
-    setSelectedMarker(id);
-    onMarkerClick?.(id);
-  };
+  const [error, setError] = useState<string | null>(null);
+  const [isReady, setIsReady] = useState(false);
+
+  // Create the map once the SDK is available.
+  useEffect(() => {
+    if (!isKakaoKeyConfigured()) {
+      setError("카카오맵 API 키가 설정되지 않았습니다. .env 파일의 VITE_KAKAO_MAP_KEY를 확인해주세요.");
+      return;
+    }
+
+    let cancelled = false;
+
+    loadKakaoMaps()
+      .then((maps) => {
+        if (cancelled || !containerRef.current) return;
+        mapRef.current = new maps.Map(containerRef.current, {
+          center: new maps.LatLng(center.lat, center.lng),
+          level: 5,
+        });
+        setIsReady(true);
+      })
+      .catch((err: Error) => {
+        if (!cancelled) setError(err.message);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+    // The map is created once; recentering is handled by the effect below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Follow the current location.
+  useEffect(() => {
+    if (!isReady || !mapRef.current) return;
+    mapRef.current.setCenter(new window.kakao.maps.LatLng(center.lat, center.lng));
+  }, [isReady, center.lat, center.lng]);
+
+  // Redraw gym markers whenever the list changes.
+  useEffect(() => {
+    if (!isReady || !mapRef.current) return;
+
+    const maps = window.kakao.maps;
+    const map = mapRef.current;
+
+    overlaysRef.current.forEach((overlay) => overlay.setMap(null));
+    overlaysRef.current = [];
+
+    const positioned = markers.filter((marker) => marker.lat != null && marker.lng != null);
+
+    positioned.forEach((marker) => {
+      const element = document.createElement("button");
+      element.type = "button";
+      element.className =
+        "flex flex-col items-center -translate-y-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg";
+      element.innerHTML = `
+        <span class="px-2 py-0.5 rounded-full text-xs font-semibold shadow-md bg-primary text-primary-foreground whitespace-nowrap">
+          ${escapeHtml(marker.name)} ⭐ ${marker.rating.toFixed(1)}
+        </span>
+        <span class="w-3 h-3 rotate-45 -mt-1 bg-primary"></span>
+      `;
+      element.addEventListener("click", () => onMarkerClickRef.current?.(marker.id));
+
+      const overlay = new maps.CustomOverlay({
+        position: new maps.LatLng(marker.lat, marker.lng),
+        content: element,
+        yAnchor: 1,
+        clickable: true,
+      });
+      overlay.setMap(map);
+      overlaysRef.current.push(overlay);
+    });
+
+    // Fit the view around the current location and every gym shown.
+    const bounds = new maps.LatLngBounds();
+    bounds.extend(new maps.LatLng(center.lat, center.lng));
+    positioned.forEach((marker) => bounds.extend(new maps.LatLng(marker.lat, marker.lng)));
+    if (positioned.length > 0) {
+      map.setBounds(bounds);
+    }
+  }, [isReady, markers, center.lat, center.lng]);
+
+  if (error) {
+    return (
+      <div
+        className={cn(
+          "relative w-full h-full bg-secondary/30 rounded-xl overflow-hidden flex items-center justify-center p-6",
+          className
+        )}
+      >
+        <div className="text-center max-w-sm">
+          <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-accent/10 flex items-center justify-center">
+            <AlertTriangle className="w-7 h-7 text-accent" />
+          </div>
+          <p className="font-medium mb-1">지도를 표시할 수 없습니다</p>
+          <p className="text-sm text-muted-foreground">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className={cn("relative w-full h-full bg-secondary/30 rounded-xl overflow-hidden", className)}>
-      {/* Map Placeholder - Replace with actual map integration */}
-      <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-primary/10">
-        <div className="absolute inset-0 flex items-center justify-center">
+    <div className={cn("relative w-full h-full rounded-xl overflow-hidden", className)}>
+      <div ref={containerRef} className="absolute inset-0" />
+
+      {!isReady && (
+        <div className="absolute inset-0 flex items-center justify-center bg-secondary/30">
           <div className="text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
-              <MapPin className="w-8 h-8 text-primary" />
-            </div>
-            <p className="text-muted-foreground text-sm">지도를 불러오는 중...</p>
-            <p className="text-xs text-muted-foreground mt-1">Mapbox API 연동 필요</p>
+            <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">지도를 불러오는 중...</p>
           </div>
         </div>
-        
-        {/* Sample Markers */}
-        {markers.map((marker, index) => (
-          <button
-            key={marker.id}
-            onClick={() => handleMarkerClick(marker.id)}
-            className={cn(
-              "absolute transform -translate-x-1/2 -translate-y-full transition-all duration-200",
-              selectedMarker === marker.id ? "scale-125 z-10" : "hover:scale-110"
-            )}
-            style={{
-              left: `${30 + (index * 15) % 50}%`,
-              top: `${35 + (index * 20) % 40}%`,
-            }}
+      )}
+
+      {isReady && (
+        <>
+          <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 rounded-full bg-card/90 backdrop-blur-sm px-3 py-1.5 shadow-md">
+            <MapPin className="w-4 h-4 text-primary" />
+            <span className="text-xs font-medium">체육관 {markers.length}곳</span>
+          </div>
+
+          <Button
+            variant="secondary"
+            size="icon"
+            onClick={onRecenter}
+            aria-label="현재 위치로 이동"
+            className="absolute bottom-4 right-4 z-10 rounded-full shadow-lg bg-card hover:bg-card"
           >
-            <div className={cn(
-              "flex flex-col items-center",
-              selectedMarker === marker.id && "animate-bounce-soft"
-            )}>
-              <div className={cn(
-                "px-2 py-1 rounded-full text-xs font-semibold mb-1 shadow-md transition-colors",
-                selectedMarker === marker.id 
-                  ? "bg-accent text-accent-foreground" 
-                  : "bg-primary text-primary-foreground"
-              )}>
-                ⭐ {marker.rating.toFixed(1)}
-              </div>
-              <div className={cn(
-                "w-8 h-8 rounded-full flex items-center justify-center shadow-lg",
-                selectedMarker === marker.id 
-                  ? "bg-accent" 
-                  : "bg-primary"
-              )}>
-                <MapPin className="w-5 h-5 text-white" />
-              </div>
-            </div>
-          </button>
-        ))}
-      </div>
-      
-      {/* Current Location Button */}
-      <Button
-        variant="secondary"
-        size="icon"
-        className="absolute bottom-4 right-4 rounded-full shadow-lg bg-card hover:bg-card"
-      >
-        <Navigation className="w-5 h-5 text-primary" />
-      </Button>
-      
-      {/* Map Controls */}
-      <div className="absolute top-4 right-4 flex flex-col gap-2">
-        <Button variant="secondary" size="icon" className="rounded-full shadow-md bg-card hover:bg-card">
-          <span className="text-lg font-bold">+</span>
-        </Button>
-        <Button variant="secondary" size="icon" className="rounded-full shadow-md bg-card hover:bg-card">
-          <span className="text-lg font-bold">−</span>
-        </Button>
-      </div>
+            <Navigation className="w-5 h-5 text-primary" />
+          </Button>
+        </>
+      )}
     </div>
   );
 };
+
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (char) => {
+    switch (char) {
+      case "&": return "&amp;";
+      case "<": return "&lt;";
+      case ">": return "&gt;";
+      case '"': return "&quot;";
+      default: return "&#39;";
+    }
+  });
+}

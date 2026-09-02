@@ -18,6 +18,7 @@ const Signup = () => {
     passwordConfirm: '',
     fullName: '',
     phone: '',
+    address: '',
   });
 
   // Password validation checks
@@ -61,6 +62,7 @@ const Signup = () => {
         password: formData.password,
         fullName: formData.fullName || undefined,
         phone: formData.phone || undefined,
+        address: formData.address || undefined,
       });
       toast.success('회원가입 성공!');
       navigate('/');
@@ -117,6 +119,19 @@ const Signup = () => {
                 placeholder="010-1234-5678"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              />
+              <p className="text-xs text-muted-foreground">
+                체육관에서 전화번호로 출석 체크할 때 사용됩니다.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="address">주소</Label>
+              <Input
+                id="address"
+                type="text"
+                placeholder="서울특별시 강남구"
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
               />
             </div>
             <div className="space-y-2">

@@ -6,7 +6,8 @@ import path from "path";
 export default defineConfig(() => ({
   server: {
     host: "::",
-    port: 8080,
+    // 8080 belongs to the Spring backend; keep the dev server on the port its CORS allows.
+    port: 5173,
   },
   plugins: [react()],
   resolve: {

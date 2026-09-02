@@ -1,39 +1,36 @@
-import { Fingerprint, Smartphone, Scan, CheckCircle2 } from "lucide-react";
+import { useState } from "react";
+import { Smartphone, Scan, CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
-import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface AttendanceCardProps {
   gymName: string;
-  onCheckIn?: (method: string, data?: string) => void;
+  isSubmitting?: boolean;
+  onCheckIn: (phoneNumber: string) => Promise<boolean>;
 }
 
-export const AttendanceCard = ({ gymName, onCheckIn }: AttendanceCardProps) => {
+export const AttendanceCard = ({ gymName, isSubmitting = false, onCheckIn }: AttendanceCardProps) => {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [isCheckedIn, setIsCheckedIn] = useState(false);
-  const [checkInMethod, setCheckInMethod] = useState<string | null>(null);
 
-  const handleCheckIn = (method: string) => {
-    if (method === "phone" && !phoneNumber) return;
-    
-    setCheckInMethod(method);
+  const handleCheckIn = async () => {
+    const succeeded = await onCheckIn(phoneNumber);
+    if (!succeeded) return;
+
     setIsCheckedIn(true);
-    onCheckIn?.(method, method === "phone" ? phoneNumber : undefined);
-    
-    // Reset after animation
-    setTimeout(() => {
-      setIsCheckedIn(false);
-      setCheckInMethod(null);
-      setPhoneNumber("");
-    }, 3000);
+    setPhoneNumber("");
+    setTimeout(() => setIsCheckedIn(false), 3000);
   };
 
-  const formatPhoneNumber = (value: string) => {
-    const numbers = value.replace(/\D/g, "");
-    if (numbers.length <= 3) return numbers;
-    if (numbers.length <= 7) return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
-    return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`;
+  /*
+   * Face recognition and NFC are on hold. The buttons stay visible so the flow is
+   * discoverable, but they only explain the status — the real calls would go through
+   * attendanceApi.checkIn with checkInMethod "FACE" / "NFC", which the backend
+   * currently answers with 501 until the hardware integration is decided.
+   */
+  const notifyOnHold = (method: string) => {
+    toast.info(`${method} 출석은 준비 중입니다. 전화번호로 출석해주세요.`);
   };
 
   if (isCheckedIn) {
@@ -59,27 +56,30 @@ export const AttendanceCard = ({ gymName, onCheckIn }: AttendanceCardProps) => {
       </div>
 
       <div className="space-y-4">
-        {/* Phone Number Input */}
-        <div className="space-y-3">
-          <div className="flex gap-2">
-            <Input
-              type="tel"
-              placeholder="010-0000-0000"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(formatPhoneNumber(e.target.value))}
-              className="gym-input text-center text-lg tracking-wider"
-              maxLength={13}
-            />
-            <Button
-              variant="gradient"
-              onClick={() => handleCheckIn("phone")}
-              disabled={phoneNumber.length < 13}
-              className="shrink-0"
-            >
-              출석
-            </Button>
-          </div>
+        <div className="flex gap-2">
+          <Input
+            type="tel"
+            inputMode="numeric"
+            placeholder="010-0000-0000"
+            value={phoneNumber}
+            onChange={(e) => setPhoneNumber(formatPhoneNumber(e.target.value))}
+            onKeyDown={(e) => e.key === "Enter" && phoneNumber.length >= 12 && handleCheckIn()}
+            className="gym-input text-center text-lg tracking-wider"
+            maxLength={13}
+            aria-label="등록된 전화번호"
+          />
+          <Button
+            variant="gradient"
+            onClick={handleCheckIn}
+            disabled={phoneNumber.length < 12 || isSubmitting}
+            className="shrink-0"
+          >
+            {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "출석"}
+          </Button>
         </div>
+        <p className="text-xs text-muted-foreground text-center">
+          가입 시 등록한 전화번호를 입력해주세요.
+        </p>
 
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
@@ -90,26 +90,38 @@ export const AttendanceCard = ({ gymName, onCheckIn }: AttendanceCardProps) => {
           </div>
         </div>
 
-        {/* Quick Check-in Methods */}
         <div className="grid grid-cols-2 gap-3">
           <Button
             variant="outline"
-            className="h-20 flex-col gap-2"
-            onClick={() => handleCheckIn("nfc")}
+            className="h-20 flex-col gap-2 relative"
+            onClick={() => notifyOnHold("NFC")}
           >
-            <Smartphone className="w-6 h-6 text-primary" />
-            <span className="text-sm">NFC 태그</span>
+            <Smartphone className="w-6 h-6 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">NFC 태그</span>
+            <span className="absolute top-1.5 right-1.5 text-[10px] px-1.5 py-0.5 rounded-full bg-secondary text-muted-foreground">
+              준비중
+            </span>
           </Button>
           <Button
             variant="outline"
-            className="h-20 flex-col gap-2"
-            onClick={() => handleCheckIn("face")}
+            className="h-20 flex-col gap-2 relative"
+            onClick={() => notifyOnHold("얼굴 인식")}
           >
-            <Scan className="w-6 h-6 text-primary" />
-            <span className="text-sm">얼굴 인식</span>
+            <Scan className="w-6 h-6 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">얼굴 인식</span>
+            <span className="absolute top-1.5 right-1.5 text-[10px] px-1.5 py-0.5 rounded-full bg-secondary text-muted-foreground">
+              준비중
+            </span>
           </Button>
         </div>
       </div>
     </div>
   );
 };
+
+function formatPhoneNumber(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+}
