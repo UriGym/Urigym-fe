@@ -47,6 +47,8 @@ const GymDetail = () => {
   const [plans, setPlans] = useState<MembershipPlanResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [purchasingPlanId, setPurchasingPlanId] = useState<string | null>(null);
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -75,6 +77,54 @@ const GymDetail = () => {
 
     load();
   }, [id]);
+
+  useEffect(() => {
+    if (!id || !isAuthenticated) {
+      setIsFavorited(false);
+      return;
+    }
+    gymsApi
+      .getFavoriteStatus(id)
+      .then((status) => setIsFavorited(status?.favorited ?? false))
+      .catch(() => setIsFavorited(false));
+  }, [id, isAuthenticated]);
+
+  const handleToggleFavorite = async () => {
+    if (!isAuthenticated) {
+      toast.error("찜하기는 로그인 후 이용할 수 있습니다.");
+      navigate("/login");
+      return;
+    }
+    if (!id || isTogglingFavorite) return;
+
+    setIsTogglingFavorite(true);
+    try {
+      const status = await gymsApi.toggleFavorite(id);
+      setIsFavorited(status?.favorited ?? false);
+    } catch {
+      toast.error("찜하기에 실패했습니다.");
+    } finally {
+      setIsTogglingFavorite(false);
+    }
+  };
+
+  const handleShare = async () => {
+    const shareUrl = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: gym?.name, url: shareUrl });
+      } catch {
+        // user closed the native share sheet — no error to surface
+      }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success("링크가 복사되었습니다.");
+    } catch {
+      toast.error("공유에 실패했습니다.");
+    }
+  };
 
   const handleReport = () => {
     if (!isAuthenticated) {
@@ -173,6 +223,7 @@ const GymDetail = () => {
               size="icon"
               aria-label="공유"
               className="rounded-full bg-background/80 backdrop-blur-sm"
+              onClick={handleShare}
             >
               <Share2 className="w-5 h-5" />
             </Button>
@@ -181,8 +232,10 @@ const GymDetail = () => {
               size="icon"
               aria-label="찜하기"
               className="rounded-full bg-background/80 backdrop-blur-sm"
+              disabled={isTogglingFavorite}
+              onClick={handleToggleFavorite}
             >
-              <Heart className="w-5 h-5" />
+              <Heart className={`w-5 h-5 ${isFavorited ? "fill-red-500 text-red-500" : ""}`} />
             </Button>
           </div>
         </div>

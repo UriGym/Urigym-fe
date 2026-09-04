@@ -2,6 +2,7 @@ import apiClient from './client';
 import type {
   AnnouncementResponse,
   EventResponse,
+  FavoriteStatusResponse,
   GymResponse,
   MembershipPlanResponse,
   PageResponse,
@@ -92,6 +93,18 @@ export const gymsApi = {
   // 회원권(기간별 가격) 조회
   getMembershipPlans: async (gymId: string) => {
     const response = await apiClient.get<MembershipPlanResponse[]>(`/gyms/${gymId}/membership-plans`);
+    return response.data;
+  },
+
+  // 찜 상태 조회
+  getFavoriteStatus: async (gymId: string) => {
+    const response = await apiClient.get<FavoriteStatusResponse>(`/gyms/${gymId}/favorite`);
+    return response.data;
+  },
+
+  // 찜 토글
+  toggleFavorite: async (gymId: string) => {
+    const response = await apiClient.post<FavoriteStatusResponse>(`/gyms/${gymId}/favorite`);
     return response.data;
   },
 };
