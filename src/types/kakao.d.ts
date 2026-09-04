@@ -52,6 +52,7 @@ declare namespace kakao.maps {
       zIndex?: number;
     });
     setMap(map: Map | null): void;
+    setPosition(position: LatLng): void;
   }
 
   namespace event {
@@ -76,8 +77,19 @@ declare namespace kakao.maps {
       x: string;
     }
 
+    interface RegionAddress {
+      region_1depth_name: string;
+      region_2depth_name: string;
+      region_3depth_name: string;
+    }
+
     class Geocoder {
       addressSearch(address: string, callback: (result: AddressSearchResult[], status: Status) => void): void;
+      coord2RegionCode(
+        lng: number,
+        lat: number,
+        callback: (result: RegionAddress[], status: Status) => void
+      ): void;
     }
 
     interface PlacesSearchResult {

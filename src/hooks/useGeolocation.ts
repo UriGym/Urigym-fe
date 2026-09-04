@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export interface Coordinates {
   lat: number;
@@ -21,15 +21,23 @@ export function useGeolocation() {
     isLoading: true,
   });
 
+  const watchIdRef = useRef<number | null>(null);
+
+  // Watches position continuously so the nearby gym list re-filters as the user moves,
+  // instead of only reading location once at page load.
   const locate = useCallback(() => {
     if (!('geolocation' in navigator)) {
       setState({ position: null, error: '이 브라우저는 위치 정보를 지원하지 않습니다.', isLoading: false });
       return;
     }
 
+    if (watchIdRef.current != null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+    }
+
     setState((prev) => ({ ...prev, isLoading: true }));
 
-    navigator.geolocation.getCurrentPosition(
+    watchIdRef.current = navigator.geolocation.watchPosition(
       ({ coords }) =>
         setState({
           position: { lat: coords.latitude, lng: coords.longitude },
@@ -51,6 +59,9 @@ export function useGeolocation() {
 
   useEffect(() => {
     locate();
+    return () => {
+      if (watchIdRef.current != null) navigator.geolocation.clearWatch(watchIdRef.current);
+    };
   }, [locate]);
 
   return {

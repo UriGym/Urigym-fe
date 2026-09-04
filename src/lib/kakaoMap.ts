@@ -41,3 +41,20 @@ export function loadKakaoMaps(): Promise<typeof window.kakao.maps> {
 
   return loaderPromise;
 }
+
+/** Reverse-geocodes coordinates to a "시/군/구 동" label, e.g. "시흥시 월곶동". */
+export async function reverseGeocode(coords: { lat: number; lng: number }): Promise<string | null> {
+  const maps = await loadKakaoMaps();
+  const geocoder = new maps.services.Geocoder();
+
+  return new Promise((resolve) => {
+    geocoder.coord2RegionCode(coords.lng, coords.lat, (result, status) => {
+      if (status !== maps.services.Status.OK || result.length === 0) {
+        resolve(null);
+        return;
+      }
+      const region = result[0];
+      resolve(`${region.region_2depth_name} ${region.region_3depth_name}`.trim());
+    });
+  });
+}

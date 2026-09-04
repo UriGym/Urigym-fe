@@ -10,11 +10,22 @@ import { MapIcon, List, Sparkles, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { gymsApi } from "@/api/gyms";
 import { distanceKm, formatDistance, useGeolocation } from "@/hooks/useGeolocation";
+import { reverseGeocode } from "@/lib/kakaoMap";
 import type { GymResponse } from "@/api/types";
+
+/** 내 위치 기준 이 반경(km) 밖 체육관은 목록/지도에서 제외. */
+const NEARBY_RADIUS_KM = 5;
 
 const Index = () => {
   const navigate = useNavigate();
   const { center, error: locationError, refresh } = useGeolocation();
+  const [locationName, setLocationName] = useState<string | null>(null);
+
+  useEffect(() => {
+    reverseGeocode(center)
+      .then(setLocationName)
+      .catch(() => setLocationName(null));
+  }, [center]);
 
   const [viewMode, setViewMode] = useState<"list" | "map">("list");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -42,7 +53,9 @@ const Index = () => {
     fetchGyms();
   }, []);
 
-  // Nearest first, with the distance from the current location attached.
+  // Nearest first, with the distance from the current location attached. Gyms outside
+  // NEARBY_RADIUS_KM are dropped so a location far from any registered gym shows none
+  // instead of the entire (irrelevant) list.
   const gymsWithDistance = useMemo(() => {
     const source = showRankedOnly ? rankedGyms : gyms;
     return source
@@ -53,6 +66,7 @@ const Index = () => {
             ? distanceKm(center, { lat: gym.lat, lng: gym.lng })
             : null,
       }))
+      .filter(({ distance }) => distance == null || distance <= NEARBY_RADIUS_KM)
       .sort((a, b) => {
         if (showRankedOnly) return 0; // preserve ranking order
         if (a.distance == null) return 1;
@@ -81,7 +95,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <Header locationLabel={locationError ? undefined : "현재 위치"} />
+      <Header locationLabel={locationError ? undefined : locationName ?? "위치 확인 중..."} />
 
       <main className="pt-16">
         {/* AI Recommendation Banner */}

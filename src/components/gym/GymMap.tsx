@@ -25,6 +25,7 @@ export const GymMap = ({ markers = [], center, onMarkerClick, onRecenter, classN
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<kakao.maps.Map | null>(null);
   const overlaysRef = useRef<kakao.maps.CustomOverlay[]>([]);
+  const meMarkerRef = useRef<kakao.maps.CustomOverlay | null>(null);
   // Kept in a ref so re-rendering markers doesn't need to re-create the map.
   const onMarkerClickRef = useRef(onMarkerClick);
   onMarkerClickRef.current = onMarkerClick;
@@ -46,8 +47,17 @@ export const GymMap = ({ markers = [], center, onMarkerClick, onRecenter, classN
         if (cancelled || !containerRef.current) return;
         mapRef.current = new maps.Map(containerRef.current, {
           center: new maps.LatLng(center.lat, center.lng),
-          level: 5,
+          level: 5, // ~250m scale
         });
+
+        meMarkerRef.current = new maps.CustomOverlay({
+          position: new maps.LatLng(center.lat, center.lng),
+          content:
+            '<span class="block w-4 h-4 rounded-full bg-blue-500 border-2 border-white shadow-md"></span>',
+          map: mapRef.current,
+          zIndex: 10,
+        });
+
         setIsReady(true);
       })
       .catch((err: Error) => {
@@ -64,7 +74,9 @@ export const GymMap = ({ markers = [], center, onMarkerClick, onRecenter, classN
   // Follow the current location.
   useEffect(() => {
     if (!isReady || !mapRef.current) return;
-    mapRef.current.setCenter(new window.kakao.maps.LatLng(center.lat, center.lng));
+    const position = new window.kakao.maps.LatLng(center.lat, center.lng);
+    mapRef.current.setCenter(position);
+    meMarkerRef.current?.setPosition(position);
   }, [isReady, center.lat, center.lng]);
 
   // Redraw gym markers whenever the list changes.
@@ -101,15 +113,10 @@ export const GymMap = ({ markers = [], center, onMarkerClick, onRecenter, classN
       overlay.setMap(map);
       overlaysRef.current.push(overlay);
     });
-
-    // Fit the view around the current location and every gym shown.
-    const bounds = new maps.LatLngBounds();
-    bounds.extend(new maps.LatLng(center.lat, center.lng));
-    positioned.forEach((marker) => bounds.extend(new maps.LatLng(marker.lat, marker.lng)));
-    if (positioned.length > 0) {
-      map.setBounds(bounds);
-    }
-  }, [isReady, markers, center.lat, center.lng]);
+    // Zoom stays fixed at the initial ~250m level (see `level: 5` above) instead of
+    // auto-fitting bounds around every marker — that used to zoom out to fit gyms
+    // far from the current location instead of showing what's actually nearby.
+  }, [isReady, markers]);
 
   if (error) {
     return (
