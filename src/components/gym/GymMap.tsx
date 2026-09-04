@@ -28,6 +28,9 @@ export const GymMap = ({ markers = [], center, onMarkerClick, onRecenter, classN
   const mapRef = useRef<kakao.maps.Map | null>(null);
   const overlaysRef = useRef<kakao.maps.CustomOverlay[]>([]);
   const meMarkerRef = useRef<kakao.maps.CustomOverlay | null>(null);
+  // True once the user drags the map — stops the "follow my location" effect from
+  // yanking their view back every time a new GPS fix comes in.
+  const userMovedMapRef = useRef(false);
 
   const [error, setError] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
@@ -58,6 +61,16 @@ export const GymMap = ({ markers = [], center, onMarkerClick, onRecenter, classN
           zIndex: 10,
         });
 
+        // Mark the map as manually moved on either gesture — our own setCenter() never
+        // fires "dragstart", and we never call setLevel() so "zoom_changed" is always a
+        // real user action (trackpad/wheel zoom recenters toward the cursor, which pans
+        // the map without a drag).
+        const markUserMoved = () => {
+          userMovedMapRef.current = true;
+        };
+        maps.event.addListener(mapRef.current, "dragstart", markUserMoved);
+        maps.event.addListener(mapRef.current, "zoom_changed", markUserMoved);
+
         setIsReady(true);
       })
       .catch((err: Error) => {
@@ -71,11 +84,14 @@ export const GymMap = ({ markers = [], center, onMarkerClick, onRecenter, classN
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Follow the current location.
+  // Follow the current location — but only pan the viewport while the user hasn't
+  // moved it themselves (drag or zoom). The blue dot always tracks the real position either way.
   useEffect(() => {
     if (!isReady || !mapRef.current) return;
     const position = new window.kakao.maps.LatLng(center.lat, center.lng);
-    mapRef.current.setCenter(position);
+    if (!userMovedMapRef.current) {
+      mapRef.current.setCenter(position);
+    }
     meMarkerRef.current?.setPosition(position);
   }, [isReady, center.lat, center.lng]);
 
@@ -119,6 +135,14 @@ export const GymMap = ({ markers = [], center, onMarkerClick, onRecenter, classN
     // far from the current location instead of showing what's actually nearby.
   }, [isReady, markers]);
 
+  const handleRecenter = () => {
+    userMovedMapRef.current = false;
+    if (mapRef.current) {
+      mapRef.current.setCenter(new window.kakao.maps.LatLng(center.lat, center.lng));
+    }
+    onRecenter?.();
+  };
+
   if (error) {
     return (
       <div
@@ -161,10 +185,10 @@ export const GymMap = ({ markers = [], center, onMarkerClick, onRecenter, classN
           <Button
             variant="secondary"
             size="icon"
-            onClick={onRecenter}
+            onClick={handleRecenter}
             aria-label="현재 위치로 이동"
             className={cn(
-              "absolute right-4 z-10 rounded-full shadow-lg bg-card hover:bg-card transition-all",
+              "absolute left-4 z-10 rounded-full shadow-lg bg-card hover:bg-card transition-all",
               selected ? "bottom-28" : "bottom-4"
             )}
           >
