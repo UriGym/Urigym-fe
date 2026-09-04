@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
   Star,
@@ -24,6 +24,7 @@ import { GymMap } from "@/components/gym/GymMap";
 import { paymentsApi } from "@/api/payments";
 import { loadTossPayments } from "@/lib/tossPayments";
 import { useAuth } from "@/contexts/AuthContext";
+import { useGeolocation } from "@/hooks/useGeolocation";
 import type {
   AnnouncementResponse,
   EventResponse,
@@ -38,8 +39,12 @@ const FALLBACK_IMAGE =
 const GymDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { isAuthenticated } = useAuth();
+  const { center: myLocation } = useGeolocation();
 
+  const initialTab = (location.state as { tab?: string } | null)?.tab ?? "info";
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [gym, setGym] = useState<GymResponse | null>(null);
   const [reviews, setReviews] = useState<ReviewResponse[]>([]);
   const [announcements, setAnnouncements] = useState<AnnouncementResponse[]>([]);
@@ -261,10 +266,14 @@ const GymDetail = () => {
               <p className="text-sm text-muted-foreground mb-1">{gym.category}</p>
               <h1 className="text-2xl font-bold">{gym.name}</h1>
             </div>
-            <div className="flex items-center gap-1 bg-accent/10 rounded-full px-3 py-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => setActiveTab("reviews")}
+              className="flex items-center gap-1 bg-accent/10 rounded-full px-3 py-1.5 shrink-0 hover:bg-accent/20 transition-colors"
+            >
               <Star className="w-5 h-5 fill-accent text-accent" />
               <span className="font-bold text-accent">{gym.rating.toFixed(1)}</span>
-            </div>
+            </button>
           </div>
 
           {gym.tags?.length > 0 && (
@@ -308,14 +317,21 @@ const GymDetail = () => {
                 출석 체크하기
               </Button>
             </div>
-            <Button variant="ghost" size="sm" className="mt-3 text-muted-foreground" onClick={handleReport}>
-              <Flag className="w-4 h-4 mr-1.5" />
-              가격이 다르거나 문제가 있나요? 신고하기
-            </Button>
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <p className="text-xs text-muted-foreground">가격이 다르거나 문제가 있나요?</p>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleReport}
+              >
+                <Flag className="w-4 h-4 mr-1.5" />
+                신고하기
+              </Button>
+            </div>
           </div>
         </div>
 
-        <Tabs defaultValue="info" className="mt-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
           <TabsList className="w-full grid grid-cols-5 bg-secondary/50">
             <TabsTrigger value="info">정보</TabsTrigger>
             <TabsTrigger value="location">위치</TabsTrigger>
@@ -409,10 +425,10 @@ const GymDetail = () => {
                   <p className="text-2xl font-bold text-primary">{gym.reviewCount}</p>
                   <p className="text-xs text-muted-foreground">리뷰</p>
                 </div>
-                <div>
+                <button type="button" onClick={() => setActiveTab("reviews")} className="hover:opacity-70">
                   <p className="text-2xl font-bold text-primary">{gym.rating.toFixed(1)}</p>
                   <p className="text-xs text-muted-foreground">평점</p>
-                </div>
+                </button>
               </div>
             </div>
           </TabsContent>
@@ -421,8 +437,16 @@ const GymDetail = () => {
             {gym.lat != null && gym.lng != null ? (
               <GymMap
                 className="h-64"
-                center={{ lat: gym.lat, lng: gym.lng }}
-                markers={[{ id: gym.id, name: gym.name, lat: gym.lat, lng: gym.lng, rating: gym.rating }]}
+                center={myLocation}
+                markers={[{
+                  id: gym.id,
+                  name: gym.name,
+                  category: gym.category,
+                  address: gym.address,
+                  lat: gym.lat,
+                  lng: gym.lng,
+                  rating: gym.rating,
+                }]}
               />
             ) : (
               <div className="gym-card p-8 text-center text-sm text-muted-foreground">
