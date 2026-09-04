@@ -162,7 +162,7 @@ const Index = () => {
             />
           </div>
         ) : filteredGyms.length > 0 ? (
-          <div className="px-4 space-y-4">
+          <div className="px-4 grid grid-cols-2 gap-3">
             {filteredGyms.map(({ gym, distance }, index) => (
               <div
                 key={gym.id}

@@ -30,4 +30,10 @@ interface Window {
     init_naver_id_login: () => void;
     getUrl: (type: "Login") => string;
   };
+
+  daum: {
+    Postcode: new (options: {
+      oncomplete: (data: { roadAddress: string; jibunAddress: string; zonecode: string }) => void;
+    }) => { open: () => void };
+  };
 }

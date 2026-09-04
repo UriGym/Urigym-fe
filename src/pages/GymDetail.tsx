@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { gymsApi } from "@/api/gyms";
+import { GymMap } from "@/components/gym/GymMap";
 import { paymentsApi } from "@/api/payments";
 import { loadTossPayments } from "@/lib/tossPayments";
 import { useAuth } from "@/contexts/AuthContext";
@@ -262,8 +263,9 @@ const GymDetail = () => {
         </div>
 
         <Tabs defaultValue="info" className="mt-4">
-          <TabsList className="w-full grid grid-cols-4 bg-secondary/50">
+          <TabsList className="w-full grid grid-cols-5 bg-secondary/50">
             <TabsTrigger value="info">정보</TabsTrigger>
+            <TabsTrigger value="location">위치</TabsTrigger>
             <TabsTrigger value="events">일정</TabsTrigger>
             <TabsTrigger value="reviews">리뷰</TabsTrigger>
             <TabsTrigger value="notice">공지</TabsTrigger>
@@ -360,6 +362,20 @@ const GymDetail = () => {
                 </div>
               </div>
             </div>
+          </TabsContent>
+
+          <TabsContent value="location" className="mt-4">
+            {gym.lat != null && gym.lng != null ? (
+              <GymMap
+                className="h-64"
+                center={{ lat: gym.lat, lng: gym.lng }}
+                markers={[{ id: gym.id, name: gym.name, lat: gym.lat, lng: gym.lng, rating: gym.rating }]}
+              />
+            ) : (
+              <div className="gym-card p-8 text-center text-sm text-muted-foreground">
+                등록된 위치 정보가 없습니다.
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="events" className="mt-4">

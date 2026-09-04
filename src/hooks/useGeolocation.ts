@@ -5,8 +5,8 @@ export interface Coordinates {
   lng: number;
 }
 
-/** Seoul City Hall — used until the browser grants a real position. */
-export const DEFAULT_CENTER: Coordinates = { lat: 37.5665, lng: 126.978 };
+/** 경기도 시흥시 월곶동 — used until the browser grants a real position. */
+export const DEFAULT_CENTER: Coordinates = { lat: 37.3948, lng: 126.7368 };
 
 interface GeolocationState {
   position: Coordinates | null;

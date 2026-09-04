@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { GymCard, GymData } from "@/components/gym/GymCard";
+import { GYM_CATEGORIES } from "@/components/gym/CategoryFilter";
 import { gymsApi } from "@/api/gyms";
 
 const popularSearches = ["24시간 헬스장", "요가", "크로스핏", "PT 추천", "여성전용"];
@@ -132,16 +133,7 @@ const Search = () => {
             <div className="animate-slide-up" style={{ animationDelay: "0.2s" }}>
               <h3 className="font-semibold mb-3">추천 카테고리</h3>
               <div className="grid grid-cols-4 gap-3">
-                {[
-                  { emoji: "💪", label: "헬스" },
-                  { emoji: "🧘", label: "요가" },
-                  { emoji: "🤸", label: "필라테스" },
-                  { emoji: "🥊", label: "복싱" },
-                  { emoji: "🏊", label: "수영" },
-                  { emoji: "🔥", label: "크로스핏" },
-                  { emoji: "🥋", label: "무술" },
-                  { emoji: "🏃", label: "러닝" },
-                ].map((category) => (
+                {GYM_CATEGORIES.map((category) => (
                   <button
                     key={category.label}
                     onClick={() => handleSearch(category.label)}

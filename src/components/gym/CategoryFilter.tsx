@@ -9,9 +9,12 @@ export const GYM_CATEGORIES = [
   { id: "크로스핏", label: "크로스핏", emoji: "🔥" },
   { id: "요가", label: "요가", emoji: "🧘" },
   { id: "필라테스", label: "필라테스", emoji: "🤸" },
-  { id: "복싱", label: "복싱", emoji: "🥊" },
+  { id: "구기종목", label: "구기종목", emoji: "⚽" },
+  { id: "투기종목", label: "투기종목", emoji: "🥊" },
   { id: "수영장", label: "수영", emoji: "🏊" },
-  { id: "무술", label: "무술", emoji: "🥋" },
+  { id: "클라이밍", label: "클라이밍", emoji: "🧗" },
+  { id: "골프", label: "골프", emoji: "⛳" },
+  { id: "댄스", label: "댄스", emoji: "💃" },
 ] as const;
 
 const filters = [{ id: "all", label: "전체", emoji: "🏋️" }, ...GYM_CATEGORIES];

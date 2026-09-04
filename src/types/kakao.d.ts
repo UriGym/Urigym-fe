@@ -58,6 +58,58 @@ declare namespace kakao.maps {
     function addListener(target: unknown, type: string, handler: (...args: unknown[]) => void): void;
   }
 
+  namespace services {
+    enum Status {
+      OK = "OK",
+      ZERO_RESULT = "ZERO_RESULT",
+      ERROR = "ERROR",
+    }
+
+    enum SortBy {
+      DISTANCE = "distance",
+      ACCURACY = "accuracy",
+    }
+
+    interface AddressSearchResult {
+      address_name: string;
+      y: string;
+      x: string;
+    }
+
+    class Geocoder {
+      addressSearch(address: string, callback: (result: AddressSearchResult[], status: Status) => void): void;
+    }
+
+    interface PlacesSearchResult {
+      id: string;
+      place_name: string;
+      category_name: string;
+      category_group_code: string;
+      category_group_name: string;
+      phone: string;
+      address_name: string;
+      road_address_name: string;
+      x: string;
+      y: string;
+      place_url: string;
+      distance: string;
+    }
+
+    interface PlacesSearchOptions {
+      location?: LatLng;
+      radius?: number;
+      sort?: SortBy;
+    }
+
+    class Places {
+      keywordSearch(
+        keyword: string,
+        callback: (result: PlacesSearchResult[], status: Status) => void,
+        options?: PlacesSearchOptions
+      ): void;
+    }
+  }
+
   function load(callback: () => void): void;
 }
 
