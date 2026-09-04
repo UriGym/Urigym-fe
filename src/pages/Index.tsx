@@ -14,7 +14,7 @@ import { reverseGeocode } from "@/lib/kakaoMap";
 import type { GymResponse } from "@/api/types";
 
 /** 내 위치 기준 이 반경(km) 밖 체육관은 목록/지도에서 제외. */
-const NEARBY_RADIUS_KM = 5;
+const NEARBY_RADIUS_KM = 2;
 
 const Index = () => {
   const navigate = useNavigate();
@@ -34,15 +34,19 @@ const Index = () => {
   const [showRankedOnly, setShowRankedOnly] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Rounded to ~100m so GPS jitter from watchPosition doesn't refetch on every tick —
+  // only a real, meaningful move triggers a new nearby-gyms request.
+  const centerKey = `${center.lat.toFixed(3)},${center.lng.toFixed(3)}`;
+
   useEffect(() => {
     const fetchGyms = async () => {
       setIsLoading(true);
       try {
-        const [page, ranked] = await Promise.all([
-          gymsApi.getAll(0, 50),
+        const [nearby, ranked] = await Promise.all([
+          gymsApi.getNearby(center.lat, center.lng, NEARBY_RADIUS_KM),
           gymsApi.getRanked(5),
         ]);
-        setGyms(page?.content ?? []);
+        setGyms(nearby ?? []);
         setRankedGyms(ranked ?? []);
       } catch (error) {
         console.error("Failed to fetch gyms:", error);
@@ -51,7 +55,8 @@ const Index = () => {
       }
     };
     fetchGyms();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [centerKey]);
 
   // Nearest first, with the distance from the current location attached. Gyms outside
   // NEARBY_RADIUS_KM are dropped so a location far from any registered gym shows none
@@ -88,6 +93,8 @@ const Index = () => {
     .map(({ gym }) => ({
       id: gym.id,
       name: gym.name,
+      category: gym.category,
+      address: gym.address,
       lat: gym.lat as number,
       lng: gym.lng as number,
       rating: gym.rating,
@@ -189,6 +196,7 @@ const Index = () => {
                     distance: distance != null ? formatDistance(distance) : undefined,
                   }}
                   onClick={() => navigate(`/gym/${gym.id}`)}
+                  onRatingClick={() => navigate(`/gym/${gym.id}`, { state: { tab: "reviews" } })}
                 />
               </div>
             ))}

@@ -46,6 +46,14 @@ export const gymsApi = {
     return response.data;
   },
 
+  // 내 주변 체육관 조회 (반경 km, 가까운 순)
+  getNearby: async (lat: number, lng: number, radiusKm = 2, limit = 200) => {
+    const response = await apiClient.get<GymResponse[]>(
+      `/gyms/nearby?lat=${lat}&lng=${lng}&radiusKm=${radiusKm}&limit=${limit}`
+    );
+    return response.data;
+  },
+
   // 위치 기반 체육관 조회
   getByLocation: async (bounds: {
     minLat: number;

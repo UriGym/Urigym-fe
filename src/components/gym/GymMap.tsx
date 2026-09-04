@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { MapPin, Navigation, AlertTriangle, Loader2 } from "lucide-react";
+import { MapPin, Navigation, AlertTriangle, Loader2, Star, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { loadKakaoMaps, isKakaoKeyConfigured } from "@/lib/kakaoMap";
@@ -8,6 +8,8 @@ import type { Coordinates } from "@/hooks/useGeolocation";
 export interface GymMarker {
   id: string;
   name: string;
+  category?: string;
+  address?: string;
   lat: number;
   lng: number;
   rating: number;
@@ -26,12 +28,10 @@ export const GymMap = ({ markers = [], center, onMarkerClick, onRecenter, classN
   const mapRef = useRef<kakao.maps.Map | null>(null);
   const overlaysRef = useRef<kakao.maps.CustomOverlay[]>([]);
   const meMarkerRef = useRef<kakao.maps.CustomOverlay | null>(null);
-  // Kept in a ref so re-rendering markers doesn't need to re-create the map.
-  const onMarkerClickRef = useRef(onMarkerClick);
-  onMarkerClickRef.current = onMarkerClick;
 
   const [error, setError] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const [selected, setSelected] = useState<GymMarker | null>(null);
 
   // Create the map once the SDK is available.
   useEffect(() => {
@@ -88,6 +88,7 @@ export const GymMap = ({ markers = [], center, onMarkerClick, onRecenter, classN
 
     overlaysRef.current.forEach((overlay) => overlay.setMap(null));
     overlaysRef.current = [];
+    setSelected(null);
 
     const positioned = markers.filter((marker) => marker.lat != null && marker.lng != null);
 
@@ -102,7 +103,7 @@ export const GymMap = ({ markers = [], center, onMarkerClick, onRecenter, classN
         </span>
         <span class="w-3 h-3 rotate-45 -mt-1 bg-primary"></span>
       `;
-      element.addEventListener("click", () => onMarkerClickRef.current?.(marker.id));
+      element.addEventListener("click", () => setSelected(marker));
 
       const overlay = new maps.CustomOverlay({
         position: new maps.LatLng(marker.lat, marker.lng),
@@ -162,10 +163,46 @@ export const GymMap = ({ markers = [], center, onMarkerClick, onRecenter, classN
             size="icon"
             onClick={onRecenter}
             aria-label="현재 위치로 이동"
-            className="absolute bottom-4 right-4 z-10 rounded-full shadow-lg bg-card hover:bg-card"
+            className={cn(
+              "absolute right-4 z-10 rounded-full shadow-lg bg-card hover:bg-card transition-all",
+              selected ? "bottom-28" : "bottom-4"
+            )}
           >
             <Navigation className="w-5 h-5 text-primary" />
           </Button>
+
+          {selected && (
+            <div className="absolute bottom-3 left-3 right-3 z-10 rounded-xl bg-card shadow-lg p-4 animate-slide-up">
+              <button
+                type="button"
+                onClick={() => setSelected(null)}
+                aria-label="닫기"
+                className="absolute top-2 right-2 p-1 text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-4 h-4" />
+              </button>
+              <div className="pr-6">
+                {selected.category && (
+                  <p className="text-xs text-muted-foreground mb-0.5">{selected.category}</p>
+                )}
+                <p className="font-semibold leading-tight">{selected.name}</p>
+                <div className="flex items-center gap-1 mt-1 text-sm">
+                  <Star className="w-3.5 h-3.5 fill-accent text-accent" />
+                  <span className="font-medium">{selected.rating.toFixed(1)}</span>
+                </div>
+                {selected.address && (
+                  <p className="text-xs text-muted-foreground mt-1 truncate">{selected.address}</p>
+                )}
+              </div>
+              <Button
+                size="sm"
+                className="w-full mt-3"
+                onClick={() => onMarkerClick?.(selected.id)}
+              >
+                상세보기
+              </Button>
+            </div>
+          )}
         </>
       )}
     </div>
