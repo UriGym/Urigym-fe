@@ -26,6 +26,7 @@ export interface GymResponse {
   memberCount: number;
   rating: number;
   reviewCount: number;
+  favoriteCount?: number;
   priceMin?: number;
   priceMax?: number;
   tags: string[];
@@ -299,8 +300,8 @@ export interface GroupMessageRequest {
 
 export interface OwnerApplicationRequest {
   businessRegImageUrl: string;
-  licenseImageUrl: string;
-  businessNumber?: string;
+  licenseImageUrl?: string;
+  businessNumber: string;
 }
 
 export interface ReportCreateRequest {
@@ -308,4 +309,8 @@ export interface ReportCreateRequest {
   category: ReportCategory;
   title: string;
   content: string;
+}
+
+export interface FavoriteStatusResponse {
+  favorited: boolean;
 }

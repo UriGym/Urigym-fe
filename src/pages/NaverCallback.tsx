@@ -20,14 +20,14 @@ const NaverCallback = () => {
     if (hasRun.current) return;
     hasRun.current = true;
 
-    const token = readNaverCallbackToken();
-    if (!token) {
-      setError("네이버 로그인 정보를 확인할 수 없습니다. 다시 시도해주세요.");
-      return;
-    }
-
-    loginWithOAuth("NAVER", token.accessToken)
-      .then(() => navigate("/", { replace: true }))
+    readNaverCallbackToken()
+      .then((token) => {
+        if (!token) {
+          setError("네이버 로그인 정보를 확인할 수 없습니다. 다시 시도해주세요.");
+          return;
+        }
+        return loginWithOAuth("NAVER", token.accessToken).then(() => navigate("/", { replace: true }));
+      })
       .catch((err: Error) => setError(err.message || "네이버 로그인에 실패했습니다."));
   }, [loginWithOAuth, navigate]);
 

@@ -1,8 +1,13 @@
 /**
- * Naver's login SDK is redirect-based, not popup-based like Kakao: it navigates to Naver,
- * then bounces back to VITE_NAVER_CALLBACK_URL with the access token in the URL hash.
- * That callback URL must be registered verbatim in the Naver Developers console and is
- * handled by the NaverCallback page, which reads the token and calls the backend.
+ * Naver's official LoginWithNaverId SDK. Redirect-based, not popup-based like Kakao:
+ * authorize() navigates to Naver, then bounces back to VITE_NAVER_CALLBACK_URL with the
+ * result in the URL hash. That callback URL must be registered verbatim in the Naver
+ * Developers console. The SDK itself generates and validates the CSRF state token
+ * (stored in localStorage) — no need to manage it by hand.
+ *
+ * Note: the SDK's global is `window.naver.LoginWithNaverId`, not `window.naver_id_login`
+ * — the older `naver_id_login` global name this file used to target no longer exists in
+ * the SDK bundle Naver serves at this URL.
  */
 
 const SDK_ID = "naver-login-sdk";
@@ -18,7 +23,7 @@ function loadSdk(): Promise<void> {
   if (loaderPromise) return loaderPromise;
 
   loaderPromise = new Promise((resolve, reject) => {
-    if (window.naver_id_login) {
+    if (window.naver?.LoginWithNaverId) {
       resolve();
       return;
     }
@@ -47,37 +52,24 @@ function callbackUrl(): string {
   return import.meta.env.VITE_NAVER_CALLBACK_URL || `${window.location.origin}/oauth/naver/callback`;
 }
 
-/** Redirects the browser to Naver's login page. Resolves once redirected (never on success). */
-export async function loginWithNaver(): Promise<void> {
+async function createInstance() {
   const clientId = import.meta.env.VITE_NAVER_CLIENT_ID;
   if (!clientId) {
     throw new Error("VITE_NAVER_CLIENT_ID가 설정되지 않았습니다.");
   }
 
   await loadSdk();
-
-  const instance = new window.naver_id_login(clientId, callbackUrl());
-  instance.setDomain(window.location.origin);
-  instance.setState(instance.getUniqState());
-  // Persist the state so the callback page can confirm this redirect wasn't forged.
-  sessionStorage.setItem("naver_oauth_state", instance.oauthParams.state);
-  instance.init_naver_id_login();
-  window.location.href = instance.getUrl("Login");
+  return new window.naver.LoginWithNaverId({ clientId, callbackUrl: callbackUrl(), isPopup: false });
 }
 
-/** Reads the access token Naver appended to the callback URL's hash, if present. */
-export function readNaverCallbackToken(): { accessToken: string } | null {
-  const hash = window.location.hash.startsWith("#") ? window.location.hash.slice(1) : window.location.hash;
-  const params = new URLSearchParams(hash);
+/** Redirects the browser to Naver's login page. Resolves once redirected (never on success). */
+export async function loginWithNaver(): Promise<void> {
+  (await createInstance()).authorize();
+}
 
-  const accessToken = params.get("access_token");
-  const state = params.get("state");
-  const expectedState = sessionStorage.getItem("naver_oauth_state");
-  sessionStorage.removeItem("naver_oauth_state");
-
-  if (!accessToken || !state || state !== expectedState) {
-    return null;
-  }
-
-  return { accessToken };
+/** Reads the access token from the callback URL, if the SDK confirms a valid callback. */
+export async function readNaverCallbackToken(): Promise<{ accessToken: string } | null> {
+  const instance = await createInstance();
+  instance.init();
+  return instance.accessToken ? { accessToken: instance.accessToken.accessToken } : null;
 }

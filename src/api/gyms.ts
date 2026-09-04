@@ -2,6 +2,7 @@ import apiClient from './client';
 import type {
   AnnouncementResponse,
   EventResponse,
+  FavoriteStatusResponse,
   GymResponse,
   MembershipPlanResponse,
   PageResponse,
@@ -41,6 +42,14 @@ export const gymsApi = {
   search: async (keyword: string, page = 0, size = 10) => {
     const response = await apiClient.get<PageResponse<GymResponse>>(
       `/gyms/search?keyword=${encodeURIComponent(keyword)}&page=${page}&size=${size}`
+    );
+    return response.data;
+  },
+
+  // 내 주변 체육관 조회 (반경 km, 가까운 순)
+  getNearby: async (lat: number, lng: number, radiusKm = 2, limit = 200) => {
+    const response = await apiClient.get<GymResponse[]>(
+      `/gyms/nearby?lat=${lat}&lng=${lng}&radiusKm=${radiusKm}&limit=${limit}`
     );
     return response.data;
   },
@@ -92,6 +101,18 @@ export const gymsApi = {
   // 회원권(기간별 가격) 조회
   getMembershipPlans: async (gymId: string) => {
     const response = await apiClient.get<MembershipPlanResponse[]>(`/gyms/${gymId}/membership-plans`);
+    return response.data;
+  },
+
+  // 찜 상태 조회
+  getFavoriteStatus: async (gymId: string) => {
+    const response = await apiClient.get<FavoriteStatusResponse>(`/gyms/${gymId}/favorite`);
+    return response.data;
+  },
+
+  // 찜 토글
+  toggleFavorite: async (gymId: string) => {
+    const response = await apiClient.post<FavoriteStatusResponse>(`/gyms/${gymId}/favorite`);
     return response.data;
   },
 };
