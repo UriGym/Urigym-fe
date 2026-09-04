@@ -1,5 +1,13 @@
 import apiClient from './client';
-import type { AuthResponse, LoginRequest, OAuthProviderName, SignupRequest, UserResponse } from './types';
+import type {
+  AuthResponse,
+  ChangePasswordRequest,
+  LoginRequest,
+  OAuthProviderName,
+  SignupRequest,
+  UserResponse,
+  UserUpdateRequest,
+} from './types';
 
 export const authApi = {
   // 회원가입
@@ -41,8 +49,24 @@ export const authApi = {
   },
 
   // 내 정보 수정
-  updateMe: async (data: Partial<UserResponse>) => {
+  updateMe: async (data: UserUpdateRequest) => {
     const response = await apiClient.put<UserResponse>('/users/me', data);
+    return response.data;
+  },
+
+  // 비밀번호 변경
+  changePassword: async (data: ChangePasswordRequest) => {
+    await apiClient.put<void>('/users/me/password', data);
+  },
+
+  // 전화번호 인증번호 발송 (SMS 연동 전까지는 서버 로그에 인증번호가 찍힘)
+  sendPhoneCode: async (phone: string) => {
+    await apiClient.post<void>('/users/me/phone/verify-code', { phone });
+  },
+
+  // 전화번호 인증번호 확인
+  confirmPhoneCode: async (phone: string, code: string) => {
+    const response = await apiClient.post<UserResponse>('/users/me/phone/confirm-code', { phone, code });
     return response.data;
   },
 
