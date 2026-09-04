@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Loader2, Check, X, ArrowLeft } from 'lucide-react';
+import { AddressSearchField } from '@/components/common/AddressSearchField';
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -124,16 +125,10 @@ const Signup = () => {
                 체육관에서 전화번호로 출석 체크할 때 사용됩니다.
               </p>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="address">주소</Label>
-              <Input
-                id="address"
-                type="text"
-                placeholder="서울특별시 강남구"
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              />
-            </div>
+            <AddressSearchField
+              value={formData.address}
+              onPicked={(result) => setFormData({ ...formData, address: result.address })}
+            />
             <div className="space-y-2">
               <Label htmlFor="password">비밀번호 *</Label>
               <Input
