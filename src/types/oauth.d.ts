@@ -22,13 +22,16 @@ interface Window {
     };
   };
 
-  naver_id_login: new (clientId: string, callbackUrl: string) => {
-    oauthParams: { state: string };
-    setDomain: (domain: string) => void;
-    setState: (state: string) => void;
-    getUniqState: () => string;
-    init_naver_id_login: () => void;
-    getUrl: (type: "Login") => string;
+  naver: {
+    LoginWithNaverId: new (options: {
+      clientId: string;
+      callbackUrl: string;
+      isPopup?: boolean;
+    }) => {
+      init: () => void;
+      authorize: () => void;
+      accessToken?: { accessToken: string };
+    };
   };
 
   daum: {
