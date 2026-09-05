@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { MapPin, Navigation, AlertTriangle, Loader2 } from "lucide-react";
+import { MapPin, Navigation, AlertTriangle, Loader2, Star, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { loadKakaoMaps, isKakaoKeyConfigured } from "@/lib/kakaoMap";
@@ -8,6 +8,8 @@ import type { Coordinates } from "@/hooks/useGeolocation";
 export interface GymMarker {
   id: string;
   name: string;
+  category?: string;
+  address?: string;
   lat: number;
   lng: number;
   rating: number;
@@ -25,12 +27,14 @@ export const GymMap = ({ markers = [], center, onMarkerClick, onRecenter, classN
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<kakao.maps.Map | null>(null);
   const overlaysRef = useRef<kakao.maps.CustomOverlay[]>([]);
-  // Kept in a ref so re-rendering markers doesn't need to re-create the map.
-  const onMarkerClickRef = useRef(onMarkerClick);
-  onMarkerClickRef.current = onMarkerClick;
+  const meMarkerRef = useRef<kakao.maps.CustomOverlay | null>(null);
+  // True once the user drags the map — stops the "follow my location" effect from
+  // yanking their view back every time a new GPS fix comes in.
+  const userMovedMapRef = useRef(false);
 
   const [error, setError] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const [selected, setSelected] = useState<GymMarker | null>(null);
 
   // Create the map once the SDK is available.
   useEffect(() => {
@@ -46,8 +50,27 @@ export const GymMap = ({ markers = [], center, onMarkerClick, onRecenter, classN
         if (cancelled || !containerRef.current) return;
         mapRef.current = new maps.Map(containerRef.current, {
           center: new maps.LatLng(center.lat, center.lng),
-          level: 5,
+          level: 5, // ~250m scale
         });
+
+        meMarkerRef.current = new maps.CustomOverlay({
+          position: new maps.LatLng(center.lat, center.lng),
+          content:
+            '<span class="block w-4 h-4 rounded-full bg-blue-500 border-2 border-white shadow-md"></span>',
+          map: mapRef.current,
+          zIndex: 10,
+        });
+
+        // Mark the map as manually moved on either gesture — our own setCenter() never
+        // fires "dragstart", and we never call setLevel() so "zoom_changed" is always a
+        // real user action (trackpad/wheel zoom recenters toward the cursor, which pans
+        // the map without a drag).
+        const markUserMoved = () => {
+          userMovedMapRef.current = true;
+        };
+        maps.event.addListener(mapRef.current, "dragstart", markUserMoved);
+        maps.event.addListener(mapRef.current, "zoom_changed", markUserMoved);
+
         setIsReady(true);
       })
       .catch((err: Error) => {
@@ -61,10 +84,15 @@ export const GymMap = ({ markers = [], center, onMarkerClick, onRecenter, classN
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Follow the current location.
+  // Follow the current location — but only pan the viewport while the user hasn't
+  // moved it themselves (drag or zoom). The blue dot always tracks the real position either way.
   useEffect(() => {
     if (!isReady || !mapRef.current) return;
-    mapRef.current.setCenter(new window.kakao.maps.LatLng(center.lat, center.lng));
+    const position = new window.kakao.maps.LatLng(center.lat, center.lng);
+    if (!userMovedMapRef.current) {
+      mapRef.current.setCenter(position);
+    }
+    meMarkerRef.current?.setPosition(position);
   }, [isReady, center.lat, center.lng]);
 
   // Redraw gym markers whenever the list changes.
@@ -76,6 +104,7 @@ export const GymMap = ({ markers = [], center, onMarkerClick, onRecenter, classN
 
     overlaysRef.current.forEach((overlay) => overlay.setMap(null));
     overlaysRef.current = [];
+    setSelected(null);
 
     const positioned = markers.filter((marker) => marker.lat != null && marker.lng != null);
 
@@ -90,7 +119,7 @@ export const GymMap = ({ markers = [], center, onMarkerClick, onRecenter, classN
         </span>
         <span class="w-3 h-3 rotate-45 -mt-1 bg-primary"></span>
       `;
-      element.addEventListener("click", () => onMarkerClickRef.current?.(marker.id));
+      element.addEventListener("click", () => setSelected(marker));
 
       const overlay = new maps.CustomOverlay({
         position: new maps.LatLng(marker.lat, marker.lng),
@@ -101,15 +130,18 @@ export const GymMap = ({ markers = [], center, onMarkerClick, onRecenter, classN
       overlay.setMap(map);
       overlaysRef.current.push(overlay);
     });
+    // Zoom stays fixed at the initial ~250m level (see `level: 5` above) instead of
+    // auto-fitting bounds around every marker — that used to zoom out to fit gyms
+    // far from the current location instead of showing what's actually nearby.
+  }, [isReady, markers]);
 
-    // Fit the view around the current location and every gym shown.
-    const bounds = new maps.LatLngBounds();
-    bounds.extend(new maps.LatLng(center.lat, center.lng));
-    positioned.forEach((marker) => bounds.extend(new maps.LatLng(marker.lat, marker.lng)));
-    if (positioned.length > 0) {
-      map.setBounds(bounds);
+  const handleRecenter = () => {
+    userMovedMapRef.current = false;
+    if (mapRef.current) {
+      mapRef.current.setCenter(new window.kakao.maps.LatLng(center.lat, center.lng));
     }
-  }, [isReady, markers, center.lat, center.lng]);
+    onRecenter?.();
+  };
 
   if (error) {
     return (
@@ -153,12 +185,48 @@ export const GymMap = ({ markers = [], center, onMarkerClick, onRecenter, classN
           <Button
             variant="secondary"
             size="icon"
-            onClick={onRecenter}
+            onClick={handleRecenter}
             aria-label="현재 위치로 이동"
-            className="absolute bottom-4 right-4 z-10 rounded-full shadow-lg bg-card hover:bg-card"
+            className={cn(
+              "absolute left-4 z-10 rounded-full shadow-lg bg-card hover:bg-card transition-all",
+              selected ? "bottom-28" : "bottom-4"
+            )}
           >
             <Navigation className="w-5 h-5 text-primary" />
           </Button>
+
+          {selected && (
+            <div className="absolute bottom-3 left-3 right-3 z-10 rounded-xl bg-card shadow-lg p-4 animate-slide-up">
+              <button
+                type="button"
+                onClick={() => setSelected(null)}
+                aria-label="닫기"
+                className="absolute top-2 right-2 p-1 text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-4 h-4" />
+              </button>
+              <div className="pr-6">
+                {selected.category && (
+                  <p className="text-xs text-muted-foreground mb-0.5">{selected.category}</p>
+                )}
+                <p className="font-semibold leading-tight">{selected.name}</p>
+                <div className="flex items-center gap-1 mt-1 text-sm">
+                  <Star className="w-3.5 h-3.5 fill-accent text-accent" />
+                  <span className="font-medium">{selected.rating.toFixed(1)}</span>
+                </div>
+                {selected.address && (
+                  <p className="text-xs text-muted-foreground mt-1 truncate">{selected.address}</p>
+                )}
+              </div>
+              <Button
+                size="sm"
+                className="w-full mt-3"
+                onClick={() => onMarkerClick?.(selected.id)}
+              >
+                상세보기
+              </Button>
+            </div>
+          )}
         </>
       )}
     </div>

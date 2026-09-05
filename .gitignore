@@ -14,6 +14,8 @@ dist-ssr
 
 # Local environment values — .env.example stays tracked as the template
 .env
+.env.*
+!.env.example
 
 # Editor directories and files
 .vscode/*

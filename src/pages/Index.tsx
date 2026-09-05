@@ -10,11 +10,27 @@ import { MapIcon, List, Sparkles, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { gymsApi } from "@/api/gyms";
 import { distanceKm, formatDistance, useGeolocation } from "@/hooks/useGeolocation";
+import { reverseGeocode } from "@/lib/kakaoMap";
 import type { GymResponse } from "@/api/types";
+
+/** 내 위치 기준 이 반경(km) 밖 체육관은 목록/지도에서 제외. */
+const NEARBY_RADIUS_KM = 2;
 
 const Index = () => {
   const navigate = useNavigate();
   const { center, error: locationError, refresh } = useGeolocation();
+  const [locationName, setLocationName] = useState<string | null>(null);
+
+  // Rounded to ~100m so GPS jitter from watchPosition doesn't refetch on every tick —
+  // only a real, meaningful move triggers a new nearby-gyms/reverse-geocode request.
+  const centerKey = `${center.lat.toFixed(3)},${center.lng.toFixed(3)}`;
+
+  useEffect(() => {
+    reverseGeocode(center)
+      .then(setLocationName)
+      .catch(() => setLocationName(null));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [centerKey]);
 
   const [viewMode, setViewMode] = useState<"list" | "map">("list");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -27,11 +43,11 @@ const Index = () => {
     const fetchGyms = async () => {
       setIsLoading(true);
       try {
-        const [page, ranked] = await Promise.all([
-          gymsApi.getAll(0, 50),
+        const [nearby, ranked] = await Promise.all([
+          gymsApi.getNearby(center.lat, center.lng, NEARBY_RADIUS_KM),
           gymsApi.getRanked(5),
         ]);
-        setGyms(page?.content ?? []);
+        setGyms(nearby ?? []);
         setRankedGyms(ranked ?? []);
       } catch (error) {
         console.error("Failed to fetch gyms:", error);
@@ -40,9 +56,12 @@ const Index = () => {
       }
     };
     fetchGyms();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [centerKey]);
 
-  // Nearest first, with the distance from the current location attached.
+  // Nearest first, with the distance from the current location attached. Gyms outside
+  // NEARBY_RADIUS_KM are dropped so a location far from any registered gym shows none
+  // instead of the entire (irrelevant) list.
   const gymsWithDistance = useMemo(() => {
     const source = showRankedOnly ? rankedGyms : gyms;
     return source
@@ -53,6 +72,7 @@ const Index = () => {
             ? distanceKm(center, { lat: gym.lat, lng: gym.lng })
             : null,
       }))
+      .filter(({ distance }) => distance == null || distance <= NEARBY_RADIUS_KM)
       .sort((a, b) => {
         if (showRankedOnly) return 0; // preserve ranking order
         if (a.distance == null) return 1;
@@ -74,6 +94,8 @@ const Index = () => {
     .map(({ gym }) => ({
       id: gym.id,
       name: gym.name,
+      category: gym.category,
+      address: gym.address,
       lat: gym.lat as number,
       lng: gym.lng as number,
       rating: gym.rating,
@@ -81,7 +103,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <Header locationLabel={locationError ? undefined : "현재 위치"} />
+      <Header locationLabel={locationError ? undefined : locationName ?? "위치 확인 중..."} />
 
       <main className="pt-16">
         {/* AI Recommendation Banner */}
@@ -162,7 +184,7 @@ const Index = () => {
             />
           </div>
         ) : filteredGyms.length > 0 ? (
-          <div className="px-4 space-y-4">
+          <div className="px-4 grid grid-cols-2 gap-3">
             {filteredGyms.map(({ gym, distance }, index) => (
               <div
                 key={gym.id}
@@ -175,6 +197,7 @@ const Index = () => {
                     distance: distance != null ? formatDistance(distance) : undefined,
                   }}
                   onClick={() => navigate(`/gym/${gym.id}`)}
+                  onRatingClick={() => navigate(`/gym/${gym.id}`, { state: { tab: "reviews" } })}
                 />
               </div>
             ))}

@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authApi } from '@/api/auth';
-import type { UserResponse, LoginRequest, OAuthProviderName, SignupRequest } from '@/api/types';
+import type { LoginRequest, OAuthProviderName, SignupRequest, UserResponse, UserUpdateRequest } from '@/api/types';
 
 interface AuthContextType {
   user: UserResponse | null;
@@ -9,6 +9,8 @@ interface AuthContextType {
   login: (data: LoginRequest) => Promise<void>;
   signup: (data: SignupRequest) => Promise<void>;
   loginWithOAuth: (provider: OAuthProviderName, accessToken: string) => Promise<void>;
+  updateProfile: (data: UserUpdateRequest) => Promise<void>;
+  refreshUser: () => Promise<void>;
   logout: () => void;
 }
 
@@ -22,7 +24,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const initAuth = async () => {
       if (authApi.isAuthenticated()) {
         try {
-          const userData = await authApi.getMe();
+          // 부팅 시 배경 세션 체크: 만료 토큰이어도 조용히 로그아웃 상태로만 전환한다
+          // (전역 401 토스트/리다이렉트는 사용자가 실제로 인증 필요한 동작을 할 때만 뜨게 함)
+          const userData = await authApi.getMe({ silent: true });
           setUser(userData);
         } catch {
           authApi.logout();
@@ -48,6 +52,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(response.user);
   };
 
+  const updateProfile = async (data: UserUpdateRequest) => {
+    const updated = await authApi.updateMe(data);
+    if (updated) setUser(updated);
+  };
+
+  const refreshUser = async () => {
+    const fresh = await authApi.getMe();
+    if (fresh) setUser(fresh);
+  };
+
   const logout = () => {
     authApi.logout();
     setUser(null);
@@ -62,6 +76,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         signup,
         loginWithOAuth,
+        updateProfile,
+        refreshUser,
         logout,
       }}
     >
