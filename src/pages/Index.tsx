@@ -21,11 +21,16 @@ const Index = () => {
   const { center, error: locationError, refresh } = useGeolocation();
   const [locationName, setLocationName] = useState<string | null>(null);
 
+  // Rounded to ~100m so GPS jitter from watchPosition doesn't refetch on every tick —
+  // only a real, meaningful move triggers a new nearby-gyms/reverse-geocode request.
+  const centerKey = `${center.lat.toFixed(3)},${center.lng.toFixed(3)}`;
+
   useEffect(() => {
     reverseGeocode(center)
       .then(setLocationName)
       .catch(() => setLocationName(null));
-  }, [center]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [centerKey]);
 
   const [viewMode, setViewMode] = useState<"list" | "map">("list");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -33,10 +38,6 @@ const Index = () => {
   const [rankedGyms, setRankedGyms] = useState<GymResponse[]>([]);
   const [showRankedOnly, setShowRankedOnly] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-
-  // Rounded to ~100m so GPS jitter from watchPosition doesn't refetch on every tick —
-  // only a real, meaningful move triggers a new nearby-gyms request.
-  const centerKey = `${center.lat.toFixed(3)},${center.lng.toFixed(3)}`;
 
   useEffect(() => {
     const fetchGyms = async () => {
