@@ -47,7 +47,8 @@ export const gymsApi = {
   },
 
   // 내 주변 체육관 조회 (반경 km, 가까운 순)
-  getNearby: async (lat: number, lng: number, radiusKm = 2, limit = 200) => {
+  // limit은 서버의 @Max(100) 상한과 일치시킴 — 넘기면 400
+  getNearby: async (lat: number, lng: number, radiusKm = 2, limit = 100) => {
     const response = await apiClient.get<GymResponse[]>(
       `/gyms/nearby?lat=${lat}&lng=${lng}&radiusKm=${radiusKm}&limit=${limit}`
     );

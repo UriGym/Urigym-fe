@@ -43,8 +43,9 @@ export const authApi = {
   },
 
   // 내 정보 조회
-  getMe: async () => {
-    const response = await apiClient.get<UserResponse>('/users/me');
+  // silent: 401이어도 토스트/리다이렉트 없이 조용히 실패시킨다 (앱 부팅 시 배경 세션 체크용)
+  getMe: async (options?: { silent?: boolean }) => {
+    const response = await apiClient.get<UserResponse>('/users/me', options);
     return response.data;
   },
 

@@ -24,7 +24,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const initAuth = async () => {
       if (authApi.isAuthenticated()) {
         try {
-          const userData = await authApi.getMe();
+          // 부팅 시 배경 세션 체크: 만료 토큰이어도 조용히 로그아웃 상태로만 전환한다
+          // (전역 401 토스트/리다이렉트는 사용자가 실제로 인증 필요한 동작을 할 때만 뜨게 함)
+          const userData = await authApi.getMe({ silent: true });
           setUser(userData);
         } catch {
           authApi.logout();
