@@ -41,8 +41,8 @@ const OwnerApplication = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!form.businessRegImageUrl || !form.licenseImageUrl) {
-      toast.error("사업자등록증과 관장 자격증을 모두 업로드해주세요.");
+    if (!form.businessRegImageUrl || !form.businessNumber) {
+      toast.error("사업자등록증과 사업자등록번호를 모두 입력해주세요.");
       return;
     }
 
@@ -50,8 +50,8 @@ const OwnerApplication = () => {
     try {
       const created = await ownerApplicationsApi.apply({
         businessRegImageUrl: form.businessRegImageUrl,
-        licenseImageUrl: form.licenseImageUrl,
-        businessNumber: form.businessNumber || undefined,
+        licenseImageUrl: form.licenseImageUrl || undefined,
+        businessNumber: form.businessNumber,
       });
       setApplication(created ?? null);
       toast.success("신청이 접수되었습니다. 관리자 확인 후 승인됩니다.");
@@ -110,6 +110,7 @@ const OwnerApplication = () => {
               description="체육관 사업자등록증 사본을 업로드해주세요."
               value={form.businessRegImageUrl}
               onChange={(url) => setForm((prev) => ({ ...prev, businessRegImageUrl: url }))}
+              required
             />
 
             <ImageUploadField
@@ -120,7 +121,10 @@ const OwnerApplication = () => {
             />
 
             <div className="space-y-2">
-              <Label htmlFor="businessNumber">사업자등록번호 (선택)</Label>
+              <Label htmlFor="businessNumber">
+                사업자등록번호
+                <span className="text-red-500"> *</span>
+              </Label>
               <Input
                 id="businessNumber"
                 placeholder="123-45-67890"

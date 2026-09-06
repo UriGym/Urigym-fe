@@ -26,6 +26,7 @@ export interface GymResponse {
   memberCount: number;
   rating: number;
   reviewCount: number;
+  favoriteCount?: number;
   priceMin?: number;
   priceMax?: number;
   tags: string[];
@@ -41,9 +42,14 @@ export interface UserResponse {
   email: string;
   fullName?: string;
   phone?: string;
+  phoneVerified?: boolean;
   address?: string;
   avatarUrl?: string;
   role: AppRole;
+  notifyAnnouncements?: boolean;
+  notifyMessages?: boolean;
+  /** False for accounts created purely through social login. */
+  hasPassword?: boolean;
   createdAt?: string;
 }
 
@@ -233,6 +239,13 @@ export interface UserUpdateRequest {
   fullName?: string;
   phone?: string;
   address?: string;
+  notifyAnnouncements?: boolean;
+  notifyMessages?: boolean;
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
 }
 
 export interface ReviewCreateRequest {
@@ -287,8 +300,8 @@ export interface GroupMessageRequest {
 
 export interface OwnerApplicationRequest {
   businessRegImageUrl: string;
-  licenseImageUrl: string;
-  businessNumber?: string;
+  licenseImageUrl?: string;
+  businessNumber: string;
 }
 
 export interface ReportCreateRequest {
@@ -296,4 +309,8 @@ export interface ReportCreateRequest {
   category: ReportCategory;
   title: string;
   content: string;
+}
+
+export interface FavoriteStatusResponse {
+  favorited: boolean;
 }

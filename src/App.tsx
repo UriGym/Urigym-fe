@@ -11,6 +11,7 @@ import Search from "./pages/Search";
 import Attendance from "./pages/Attendance";
 import MyPage from "./pages/MyPage";
 import MyGyms from "./pages/MyGyms";
+import AttendanceHistory from "./pages/AttendanceHistory";
 import OwnerDashboard from "./pages/OwnerDashboard";
 import OwnerApplication from "./pages/OwnerApplication";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -20,6 +21,8 @@ import Signup from "./pages/Signup";
 import NaverCallback from "./pages/NaverCallback";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentFail from "./pages/PaymentFail";
+import AccountSettings from "./pages/AccountSettings";
+import NotificationSettings from "./pages/NotificationSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -45,6 +48,22 @@ const App = () => (
               }
             />
             <Route path="/payments/fail" element={<PaymentFail />} />
+            <Route
+              path="/mypage/account"
+              element={
+                <RoleRoute>
+                  <AccountSettings />
+                </RoleRoute>
+              }
+            />
+            <Route
+              path="/mypage/notifications"
+              element={
+                <RoleRoute>
+                  <NotificationSettings />
+                </RoleRoute>
+              }
+            />
             <Route path="/gym/:id" element={<GymDetail />} />
             <Route path="/search" element={<Search />} />
             <Route path="/attendance" element={<Attendance />} />
@@ -54,6 +73,14 @@ const App = () => (
               element={
                 <RoleRoute>
                   <MyGyms />
+                </RoleRoute>
+              }
+            />
+            <Route
+              path="/mypage/attendance"
+              element={
+                <RoleRoute>
+                  <AttendanceHistory />
                 </RoleRoute>
               }
             />

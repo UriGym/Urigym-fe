@@ -82,8 +82,8 @@ const MyPage = () => {
       items: [
         { icon: HelpCircle, label: "고객센터 / 문의하기", path: "/support" },
         { icon: FileText, label: "내 신고·문의 내역", path: "/support" },
-        { icon: Bell, label: "알림 설정" },
-        { icon: Settings, label: "계정 설정" },
+        { icon: Bell, label: "알림 설정", path: "/mypage/notifications" },
+        { icon: Settings, label: "계정 설정", path: "/mypage/account" },
       ],
     },
   ];
@@ -114,20 +114,35 @@ const MyPage = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-border">
-                <button
-                  type="button"
-                  onClick={() => navigate("/mypage/gyms")}
-                  className="text-center rounded-lg -m-2 p-2 border-0 bg-transparent hover:bg-secondary/50 transition-colors"
-                >
-                  <p className="text-2xl font-bold text-primary">{stats.gyms}</p>
-                  <p className="text-xs text-muted-foreground">등록 체육관</p>
-                </button>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-primary">{stats.attendances}</p>
-                  <p className="text-xs text-muted-foreground">총 출석</p>
+              {stats.gyms === 0 ? (
+                <div className="mt-6 pt-6 border-t border-border text-center">
+                  <p className="text-sm text-muted-foreground mb-3">
+                    등록된 체육관이 없습니다. 운동하러 가기!
+                  </p>
+                  <Button variant="gradient" size="sm" onClick={() => navigate("/")}>
+                    주변 체육관 둘러보기
+                  </Button>
                 </div>
-              </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-border">
+                  <button
+                    type="button"
+                    onClick={() => navigate("/mypage/gyms")}
+                    className="text-center rounded-lg -m-2 p-2 border-0 bg-transparent hover:bg-secondary/50 transition-colors"
+                  >
+                    <p className="text-2xl font-bold text-primary">{stats.gyms}</p>
+                    <p className="text-xs text-muted-foreground">등록 체육관</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/mypage/attendance")}
+                    className="text-center rounded-lg -m-2 p-2 border-0 bg-transparent hover:bg-secondary/50 transition-colors"
+                  >
+                    <p className="text-2xl font-bold text-primary">{stats.attendances}</p>
+                    <p className="text-xs text-muted-foreground">총 출석</p>
+                  </button>
+                </div>
+              )}
             </>
           ) : (
             <div className="flex flex-col items-center py-6">

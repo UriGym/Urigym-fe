@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
   Star,
@@ -20,9 +20,11 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { gymsApi } from "@/api/gyms";
+import { GymMap } from "@/components/gym/GymMap";
 import { paymentsApi } from "@/api/payments";
 import { loadTossPayments } from "@/lib/tossPayments";
 import { useAuth } from "@/contexts/AuthContext";
+import { useGeolocation } from "@/hooks/useGeolocation";
 import type {
   AnnouncementResponse,
   EventResponse,
@@ -37,8 +39,12 @@ const FALLBACK_IMAGE =
 const GymDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { isAuthenticated } = useAuth();
+  const { center: myLocation } = useGeolocation();
 
+  const initialTab = (location.state as { tab?: string } | null)?.tab ?? "info";
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [gym, setGym] = useState<GymResponse | null>(null);
   const [reviews, setReviews] = useState<ReviewResponse[]>([]);
   const [announcements, setAnnouncements] = useState<AnnouncementResponse[]>([]);
@@ -46,6 +52,8 @@ const GymDetail = () => {
   const [plans, setPlans] = useState<MembershipPlanResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [purchasingPlanId, setPurchasingPlanId] = useState<string | null>(null);
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -74,6 +82,54 @@ const GymDetail = () => {
 
     load();
   }, [id]);
+
+  useEffect(() => {
+    if (!id || !isAuthenticated) {
+      setIsFavorited(false);
+      return;
+    }
+    gymsApi
+      .getFavoriteStatus(id)
+      .then((status) => setIsFavorited(status?.favorited ?? false))
+      .catch(() => setIsFavorited(false));
+  }, [id, isAuthenticated]);
+
+  const handleToggleFavorite = async () => {
+    if (!isAuthenticated) {
+      toast.error("찜하기는 로그인 후 이용할 수 있습니다.");
+      navigate("/login");
+      return;
+    }
+    if (!id || isTogglingFavorite) return;
+
+    setIsTogglingFavorite(true);
+    try {
+      const status = await gymsApi.toggleFavorite(id);
+      setIsFavorited(status?.favorited ?? false);
+    } catch {
+      toast.error("찜하기에 실패했습니다.");
+    } finally {
+      setIsTogglingFavorite(false);
+    }
+  };
+
+  const handleShare = async () => {
+    const shareUrl = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: gym?.name, url: shareUrl });
+      } catch {
+        // user closed the native share sheet — no error to surface
+      }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success("링크가 복사되었습니다.");
+    } catch {
+      toast.error("공유에 실패했습니다.");
+    }
+  };
 
   const handleReport = () => {
     if (!isAuthenticated) {
@@ -172,6 +228,7 @@ const GymDetail = () => {
               size="icon"
               aria-label="공유"
               className="rounded-full bg-background/80 backdrop-blur-sm"
+              onClick={handleShare}
             >
               <Share2 className="w-5 h-5" />
             </Button>
@@ -180,8 +237,10 @@ const GymDetail = () => {
               size="icon"
               aria-label="찜하기"
               className="rounded-full bg-background/80 backdrop-blur-sm"
+              disabled={isTogglingFavorite}
+              onClick={handleToggleFavorite}
             >
-              <Heart className="w-5 h-5" />
+              <Heart className={`w-5 h-5 ${isFavorited ? "fill-red-500 text-red-500" : ""}`} />
             </Button>
           </div>
         </div>
@@ -207,10 +266,14 @@ const GymDetail = () => {
               <p className="text-sm text-muted-foreground mb-1">{gym.category}</p>
               <h1 className="text-2xl font-bold">{gym.name}</h1>
             </div>
-            <div className="flex items-center gap-1 bg-accent/10 rounded-full px-3 py-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => setActiveTab("reviews")}
+              className="flex items-center gap-1 bg-accent/10 rounded-full px-3 py-1.5 shrink-0 hover:bg-accent/20 transition-colors"
+            >
               <Star className="w-5 h-5 fill-accent text-accent" />
               <span className="font-bold text-accent">{gym.rating.toFixed(1)}</span>
-            </div>
+            </button>
           </div>
 
           {gym.tags?.length > 0 && (
@@ -254,16 +317,24 @@ const GymDetail = () => {
                 출석 체크하기
               </Button>
             </div>
-            <Button variant="ghost" size="sm" className="mt-3 text-muted-foreground" onClick={handleReport}>
-              <Flag className="w-4 h-4 mr-1.5" />
-              가격이 다르거나 문제가 있나요? 신고하기
-            </Button>
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <p className="text-xs text-muted-foreground">가격이 다르거나 문제가 있나요?</p>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleReport}
+              >
+                <Flag className="w-4 h-4 mr-1.5" />
+                신고하기
+              </Button>
+            </div>
           </div>
         </div>
 
-        <Tabs defaultValue="info" className="mt-4">
-          <TabsList className="w-full grid grid-cols-4 bg-secondary/50">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
+          <TabsList className="w-full grid grid-cols-5 bg-secondary/50">
             <TabsTrigger value="info">정보</TabsTrigger>
+            <TabsTrigger value="location">위치</TabsTrigger>
             <TabsTrigger value="events">일정</TabsTrigger>
             <TabsTrigger value="reviews">리뷰</TabsTrigger>
             <TabsTrigger value="notice">공지</TabsTrigger>
@@ -354,12 +425,34 @@ const GymDetail = () => {
                   <p className="text-2xl font-bold text-primary">{gym.reviewCount}</p>
                   <p className="text-xs text-muted-foreground">리뷰</p>
                 </div>
-                <div>
+                <button type="button" onClick={() => setActiveTab("reviews")} className="hover:opacity-70">
                   <p className="text-2xl font-bold text-primary">{gym.rating.toFixed(1)}</p>
                   <p className="text-xs text-muted-foreground">평점</p>
-                </div>
+                </button>
               </div>
             </div>
+          </TabsContent>
+
+          <TabsContent value="location" className="mt-4">
+            {gym.lat != null && gym.lng != null ? (
+              <GymMap
+                className="h-64"
+                center={myLocation}
+                markers={[{
+                  id: gym.id,
+                  name: gym.name,
+                  category: gym.category,
+                  address: gym.address,
+                  lat: gym.lat,
+                  lng: gym.lng,
+                  rating: gym.rating,
+                }]}
+              />
+            ) : (
+              <div className="gym-card p-8 text-center text-sm text-muted-foreground">
+                등록된 위치 정보가 없습니다.
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="events" className="mt-4">

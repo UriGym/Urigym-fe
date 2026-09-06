@@ -14,10 +14,12 @@ export type GymData = GymResponse & {
 interface GymCardProps {
   gym: GymData;
   onClick?: () => void;
+  /** Separate from onClick so tapping the rating jumps straight to the reviews tab. */
+  onRatingClick?: () => void;
   className?: string;
 }
 
-export const GymCard = ({ gym, onClick, className }: GymCardProps) => {
+export const GymCard = ({ gym, onClick, onRatingClick, className }: GymCardProps) => {
   const priceDisplay = gym.priceMin ? `월 ${gym.priceMin.toLocaleString()}원` : "가격문의";
 
   return (
@@ -40,10 +42,17 @@ export const GymCard = ({ gym, onClick, className }: GymCardProps) => {
           </Badge>
         </div>
         <div className="absolute top-3 right-3">
-          <div className="flex items-center gap-1 bg-background/90 backdrop-blur-sm rounded-full px-2 py-1">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onRatingClick?.();
+            }}
+            className="flex items-center gap-1 bg-background/90 backdrop-blur-sm rounded-full px-2 py-1 hover:bg-background"
+          >
             <Star className="w-4 h-4 fill-accent text-accent" />
             <span className="text-sm font-semibold">{gym.rating.toFixed(1)}</span>
-          </div>
+          </button>
         </div>
       </div>
 

@@ -43,6 +43,10 @@ import { toast } from "sonner";
 import { ownerApi } from "@/api/owner";
 import { gymsApi } from "@/api/gyms";
 import { GYM_CATEGORIES } from "@/components/gym/CategoryFilter";
+import { ImageUploadField } from "@/components/common/ImageUploadField";
+import { AddressSearchField } from "@/components/common/AddressSearchField";
+import { loadKakaoMaps } from "@/lib/kakaoMap";
+import type { AddressResult } from "@/lib/daumPostcode";
 import type {
   EventResponse,
   GymMemberResponse,
@@ -691,6 +695,20 @@ const GymFormDialog = ({ gym, onSaved }: { gym?: GymResponse; onSaved: () => voi
     );
   }, [open, gym]);
 
+  const handleAddressPicked = async (result: AddressResult) => {
+    setForm((p) => ({ ...p, address: result.address }));
+    try {
+      const maps = await loadKakaoMaps();
+      new maps.services.Geocoder().addressSearch(result.address, (res, status) => {
+        if (status === maps.services.Status.OK && res[0]) {
+          setForm((p) => ({ ...p, lat: parseFloat(res[0].y), lng: parseFloat(res[0].x) }));
+        }
+      });
+    } catch {
+      // Geocoding failed — owner can still save; the gym just won't have a map pin yet.
+    }
+  };
+
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
@@ -726,6 +744,12 @@ const GymFormDialog = ({ gym, onSaved }: { gym?: GymResponse; onSaved: () => voi
               onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
             />
           </Field>
+          <ImageUploadField
+            label="대표 사진"
+            description="등록하지 않으면 기본 이미지가 표시됩니다."
+            value={form.imageUrl ?? ""}
+            onChange={(url) => setForm((p) => ({ ...p, imageUrl: url }))}
+          />
           <Field label="카테고리" required>
             <Select
               value={form.category}
@@ -743,35 +767,12 @@ const GymFormDialog = ({ gym, onSaved }: { gym?: GymResponse; onSaved: () => voi
               </SelectContent>
             </Select>
           </Field>
-          <Field label="주소" required>
-            <Input
-              required
-              value={form.address}
-              onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))}
-            />
-          </Field>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="위도 (지도 표시용)">
-              <Input
-                type="number"
-                step="any"
-                value={form.lat ?? ""}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, lat: e.target.value ? Number(e.target.value) : undefined }))
-                }
-              />
-            </Field>
-            <Field label="경도 (지도 표시용)">
-              <Input
-                type="number"
-                step="any"
-                value={form.lng ?? ""}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, lng: e.target.value ? Number(e.target.value) : undefined }))
-                }
-              />
-            </Field>
-          </div>
+          <AddressSearchField value={form.address} onPicked={handleAddressPicked} required />
+          {form.lat != null && form.lng != null && (
+            <p className="text-xs text-muted-foreground -mt-2">
+              지도 좌표 확인됨 ({form.lat.toFixed(5)}, {form.lng.toFixed(5)})
+            </p>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <Field label="월 최소 가격 (원)" required>
               <Input

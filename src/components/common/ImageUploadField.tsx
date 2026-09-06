@@ -11,9 +11,10 @@ interface ImageUploadFieldProps {
   description?: string;
   value: string;
   onChange: (url: string) => void;
+  required?: boolean;
 }
 
-export const ImageUploadField = ({ label, description, value, onChange }: ImageUploadFieldProps) => {
+export const ImageUploadField = ({ label, description, value, onChange, required }: ImageUploadFieldProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -31,7 +32,11 @@ export const ImageUploadField = ({ label, description, value, onChange }: ImageU
 
   return (
     <div className="space-y-2">
-      <Label>{label}</Label>
+      <Label>
+        {label}
+        {required && <span className="text-red-500"> *</span>}
+        {!required && <span className="text-muted-foreground"> (선택)</span>}
+      </Label>
       {description && <p className="text-xs text-muted-foreground">{description}</p>}
 
       <input
