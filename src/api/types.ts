@@ -50,6 +50,8 @@ export interface UserResponse {
   notifyMessages?: boolean;
   /** False for accounts created purely through social login. */
   hasPassword?: boolean;
+  /** Linked social login providers, e.g. ["KAKAO"]. Empty for password-only accounts. */
+  oauthProviders?: OAuthProviderName[];
   createdAt?: string;
 }
 
