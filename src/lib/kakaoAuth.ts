@@ -55,15 +55,29 @@ function loadSdk(): Promise<void> {
   return loaderPromise;
 }
 
+// If the login app's domain isn't registered in the Kakao Developers console (KOE009), the
+// popup never opens and neither success nor fail ever fires — the promise below would hang
+// forever without this timeout.
+const LOGIN_TIMEOUT_MS = 15000;
+
 /** Opens the Kakao login popup and resolves with the access token. */
 export async function loginWithKakao(): Promise<string> {
   await loadSdk();
 
-  return new Promise((resolve, reject) => {
+  const login = new Promise<string>((resolve, reject) => {
     window.Kakao.Auth.login({
       scope: "account_email,profile_nickname",
       success: (auth) => resolve(auth.access_token),
       fail: (error) => reject(new Error(error?.error_description || "카카오 로그인에 실패했습니다.")),
     });
   });
+
+  const timeout = new Promise<string>((_, reject) => {
+    setTimeout(
+      () => reject(new Error("카카오 로그인 응답이 없습니다. 팝업이 차단되었거나 카카오 앱 설정을 확인해주세요.")),
+      LOGIN_TIMEOUT_MS
+    );
+  });
+
+  return Promise.race([login, timeout]);
 }
