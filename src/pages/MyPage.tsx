@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { attendanceApi } from "@/api/attendance";
 import { membershipsApi } from "@/api/misc";
+import type { OAuthProviderName } from "@/api/types";
 import {
   User,
   Settings,
@@ -28,6 +29,16 @@ const ROLE_LABELS = {
   OWNER: "관장",
   USER: "일반회원",
 } as const;
+
+const PROVIDER_LABELS: Record<OAuthProviderName, string> = {
+  KAKAO: "카카오 회원",
+  NAVER: "네이버 회원",
+};
+
+const PROVIDER_BADGE_CLASSES: Record<OAuthProviderName, string> = {
+  KAKAO: "bg-[#FEE500] text-[#191919]",
+  NAVER: "bg-[#03C75A] text-white",
+};
 
 interface MenuItem {
   icon: LucideIcon;
@@ -106,6 +117,11 @@ const MyPage = () => {
                     <Badge className="bg-primary/10 text-primary text-xs shrink-0">
                       {ROLE_LABELS[user.role]}
                     </Badge>
+                    {user.oauthProviders?.map((provider) => (
+                      <Badge key={provider} className={`${PROVIDER_BADGE_CLASSES[provider]} text-xs shrink-0`}>
+                        {PROVIDER_LABELS[provider]}
+                      </Badge>
+                    ))}
                   </div>
                   <p className="text-sm text-muted-foreground truncate">{user.email}</p>
                   {user.phone && (
