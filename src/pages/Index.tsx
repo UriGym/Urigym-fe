@@ -38,6 +38,10 @@ const Index = () => {
   const [rankedGyms, setRankedGyms] = useState<GymResponse[]>([]);
   const [showRankedOnly, setShowRankedOnly] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  // The center this fetch used — kept separate from the live `center` above so a
+  // watchPosition update landing between fetches can't get distance-filtered against a
+  // gym list that was fetched for a different location (see fetchGyms below).
+  const [fetchCenter, setFetchCenter] = useState(center);
 
   useEffect(() => {
     const fetchGyms = async () => {
@@ -49,6 +53,7 @@ const Index = () => {
         ]);
         setGyms(nearby ?? []);
         setRankedGyms(ranked ?? []);
+        setFetchCenter(center);
       } catch (error) {
         console.error("Failed to fetch gyms:", error);
       } finally {
@@ -69,7 +74,7 @@ const Index = () => {
         gym,
         distance:
           gym.lat != null && gym.lng != null
-            ? distanceKm(center, { lat: gym.lat, lng: gym.lng })
+            ? distanceKm(fetchCenter, { lat: gym.lat, lng: gym.lng })
             : null,
       }))
       .filter(({ distance }) => distance == null || distance <= NEARBY_RADIUS_KM)
@@ -79,7 +84,7 @@ const Index = () => {
         if (b.distance == null) return -1;
         return a.distance - b.distance;
       });
-  }, [gyms, rankedGyms, showRankedOnly, center]);
+  }, [gyms, rankedGyms, showRankedOnly, fetchCenter]);
 
   const filteredGyms = useMemo(
     () =>
