@@ -9,6 +9,19 @@ export function isKakaoLoginConfigured(): boolean {
   return Boolean(import.meta.env.VITE_KAKAO_APP_KEY);
 }
 
+/**
+ * Starts loading the Kakao SDK immediately, without waiting for a login click.
+ *
+ * Popup blockers only allow window.open() when it's called synchronously from a user
+ * gesture — the login button's click handler awaits loadSdk() first, so on a first
+ * visit (SDK not cached yet) that network fetch eats the gesture window and the
+ * popup gets silently blocked. Kicking the fetch off on mount instead means it's
+ * usually already resolved by the time the user actually clicks.
+ */
+export function preloadKakaoSdk(): void {
+  if (isKakaoLoginConfigured()) loadSdk().catch(() => {});
+}
+
 function loadSdk(): Promise<void> {
   if (loaderPromise) return loaderPromise;
 
