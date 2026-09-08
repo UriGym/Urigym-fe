@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { isKakaoLoginConfigured, loginWithKakao } from "@/lib/kakaoAuth";
+import { isKakaoLoginConfigured, loginWithKakao, preloadKakaoSdk } from "@/lib/kakaoAuth";
 import { isNaverLoginConfigured, loginWithNaver } from "@/lib/naverAuth";
 
 /**
@@ -16,6 +16,12 @@ export const SocialLoginButtons = () => {
   const navigate = useNavigate();
   const { loginWithOAuth } = useAuth();
   const [loadingProvider, setLoadingProvider] = useState<"KAKAO" | "NAVER" | null>(null);
+
+  // Start fetching the SDK as soon as this page renders, not on click — see
+  // preloadKakaoSdk's doc comment for why the click handler alone is too late.
+  useEffect(() => {
+    preloadKakaoSdk();
+  }, []);
 
   const handleKakao = async () => {
     if (!isKakaoLoginConfigured()) {
