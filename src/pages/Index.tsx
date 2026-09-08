@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { Header } from "@/components/layout/Header";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { GymCard } from "@/components/gym/GymCard";
@@ -11,6 +12,8 @@ import { cn } from "@/lib/utils";
 import { gymsApi } from "@/api/gyms";
 import { distanceKm, formatDistance, useGeolocation } from "@/hooks/useGeolocation";
 import { reverseGeocode } from "@/lib/kakaoMap";
+import { readNaverCallbackToken } from "@/lib/naverAuth";
+import { useAuth } from "@/contexts/AuthContext";
 import type { GymResponse } from "@/api/types";
 
 /** 내 위치 기준 이 반경(km) 밖 체육관은 목록/지도에서 제외. */
@@ -18,8 +21,28 @@ const NEARBY_RADIUS_KM = 2;
 
 const Index = () => {
   const navigate = useNavigate();
+  const { loginWithOAuth } = useAuth();
   const { center, error: locationError, refresh } = useGeolocation();
   const [locationName, setLocationName] = useState<string | null>(null);
+
+  // Naver's console-registered callback URL doesn't match our dedicated
+  // /oauth/naver/callback route, so it redirects here with the token instead — handle
+  // it wherever it actually lands rather than depending on that console setting.
+  useEffect(() => {
+    if (!window.location.hash.includes("access_token=")) return;
+    readNaverCallbackToken()
+      .then((token) => {
+        if (!token) return;
+        return loginWithOAuth("NAVER", token.accessToken).then(() =>
+          toast.success("네이버로 로그인했습니다.")
+        );
+      })
+      .catch((err) => toast.error(err instanceof Error ? err.message : "네이버 로그인에 실패했습니다."))
+      .finally(() => {
+        window.history.replaceState(null, "", window.location.pathname + window.location.search);
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Rounded to ~100m so GPS jitter from watchPosition doesn't refetch on every tick —
   // only a real, meaningful move triggers a new nearby-gyms/reverse-geocode request.
