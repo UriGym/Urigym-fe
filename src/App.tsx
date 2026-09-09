@@ -12,6 +12,7 @@ import Search from "./pages/Search";
 import Attendance from "./pages/Attendance";
 import MyPage from "./pages/MyPage";
 import MyGyms from "./pages/MyGyms";
+import MyFavorites from "./pages/MyFavorites";
 import AttendanceHistory from "./pages/AttendanceHistory";
 import OwnerDashboard from "./pages/OwnerDashboard";
 import OwnerApplication from "./pages/OwnerApplication";
@@ -79,6 +80,14 @@ const App = () => (
                 element={
                   <RoleRoute>
                     <MyGyms />
+                  </RoleRoute>
+                }
+              />
+              <Route
+                path="/mypage/favorites"
+                element={
+                  <RoleRoute>
+                    <MyFavorites />
                   </RoleRoute>
                 }
               />
