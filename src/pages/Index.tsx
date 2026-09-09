@@ -98,7 +98,7 @@ const Index = () => {
             ? distanceKm(fetchCenter, { lat: gym.lat, lng: gym.lng })
             : null,
       }))
-      .filter(({ distance }) => distance == null || distance <= NEARBY_RADIUS_KM)
+      .filter(({ distance }) => showRankedOnly || distance == null || distance <= NEARBY_RADIUS_KM)
       .sort((a, b) => {
         if (showRankedOnly) return 0; // preserve ranking order
         if (a.distance == null) return 1;
