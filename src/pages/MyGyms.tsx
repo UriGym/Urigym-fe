@@ -54,7 +54,7 @@ const MyGyms = () => {
 
   return (
     <div className="min-h-screen bg-background pb-10">
-      <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
+      <header className="fixed top-16 left-0 right-0 z-40 glass border-b border-border/50">
         <div className="flex items-center gap-3 px-4 py-3 max-w-lg mx-auto">
           <Button variant="ghost" size="icon" onClick={() => navigate("/mypage")}>
             <ArrowLeft className="w-5 h-5" />
@@ -63,7 +63,7 @@ const MyGyms = () => {
         </div>
       </header>
 
-      <main className="pt-20 px-4 max-w-lg mx-auto space-y-3">
+      <main className="pt-32 px-4 max-w-lg mx-auto space-y-3">
         {isLoading ? (
           <div className="flex justify-center py-16">
             <Loader2 className="w-7 h-7 animate-spin text-primary" />

@@ -183,7 +183,7 @@ const GymDetail = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-background pt-16 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
@@ -191,7 +191,7 @@ const GymDetail = () => {
 
   if (!gym) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
+      <div className="min-h-screen bg-background pt-16 flex flex-col items-center justify-center gap-4">
         <p className="text-muted-foreground">체육관을 찾을 수 없습니다.</p>
         <Button onClick={() => navigate(-1)}>돌아가기</Button>
       </div>
@@ -202,7 +202,7 @@ const GymDetail = () => {
   const priceDisplay = gym.priceMin ? `월 ${gym.priceMin.toLocaleString()}원` : "가격문의";
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-24 pt-16">
       {/* Hero Image */}
       <div className="relative h-64">
         <img

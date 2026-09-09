@@ -55,7 +55,7 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background pb-10">
-      <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
+      <header className="fixed top-16 left-0 right-0 z-40 glass border-b border-border/50">
         <div className="flex items-center gap-3 px-4 py-3 max-w-4xl mx-auto">
           <Button variant="ghost" size="icon" onClick={() => navigate("/mypage")}>
             <ArrowLeft className="w-5 h-5" />
@@ -65,7 +65,7 @@ const AdminDashboard = () => {
         </div>
       </header>
 
-      <main className="pt-20 px-4 max-w-4xl mx-auto">
+      <main className="pt-32 px-4 max-w-4xl mx-auto">
         <Tabs defaultValue="users">
           <TabsList className="w-full grid grid-cols-4 bg-secondary/50">
             <TabsTrigger value="users">사용자</TabsTrigger>

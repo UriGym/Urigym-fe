@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Header } from "@/components/layout/Header";
-import { BottomNav } from "@/components/layout/BottomNav";
 import { GymCard } from "@/components/gym/GymCard";
 import { GymMap } from "@/components/gym/GymMap";
 import { CategoryFilter } from "@/components/gym/CategoryFilter";
@@ -130,10 +128,14 @@ const Index = () => {
     }));
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <Header locationLabel={locationError ? undefined : locationName ?? "위치 확인 중..."} />
+    <>
+        {!locationError && (
+          <div className="px-4 pt-3 flex items-center gap-1 text-sm text-muted-foreground">
+            <span className="w-2 h-2 bg-accent rounded-full animate-pulse-soft" />
+            <span>{locationName ?? "위치 확인 중..."}</span>
+          </div>
+        )}
 
-      <main className="pt-16">
         {/* AI Recommendation Banner */}
         <div className="px-4 py-3">
           <div className="gradient-primary rounded-xl p-4 shadow-gym">
@@ -235,10 +237,7 @@ const Index = () => {
             <p>조건에 맞는 체육관이 없습니다.</p>
           </div>
         )}
-      </main>
-
-      <BottomNav />
-    </div>
+    </>
   );
 };
 
