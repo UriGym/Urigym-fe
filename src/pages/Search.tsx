@@ -52,7 +52,7 @@ const Search = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <Header title="검색" showLocation={false} />
+      <Header showLocation={false} />
 
       <main className="pt-20 px-4 space-y-6">
         {/* Search Input */}
