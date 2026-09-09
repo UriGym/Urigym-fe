@@ -746,7 +746,7 @@ const GymFormDialog = ({ gym, onSaved }: { gym?: GymResponse; onSaved: () => voi
           </Field>
           <ImageUploadField
             label="대표 사진"
-            description="등록하지 않으면 기본 이미지가 표시됩니다."
+            description="등록하지 않으면 '등록된 사진 없음'으로 표시됩니다."
             value={form.imageUrl ?? ""}
             onChange={(url) => setForm((p) => ({ ...p, imageUrl: url }))}
           />
