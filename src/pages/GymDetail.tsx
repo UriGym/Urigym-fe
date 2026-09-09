@@ -342,23 +342,14 @@ const GymDetail = () => {
                 <p className="text-sm text-muted-foreground">월 이용권</p>
                 <p className="text-2xl font-bold text-primary">{priceDisplay}</p>
               </div>
-              <Button variant="gradient" size="lg" onClick={() => navigate("/attendance")}>
-                출석 체크하기
-              </Button>
-            </div>
-            <div className="mt-3 flex items-center justify-between gap-3">
-              <p className="text-xs text-muted-foreground">가격이 다르거나 문제가 있나요?</p>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleReport}
-              >
-                <Flag className="w-4 h-4 mr-1.5" />
-                신고하기
-              </Button>
+              {myMembershipStatus === "ACTIVE" && (
+                <Button variant="gradient" size="lg" onClick={() => navigate("/attendance")}>
+                  출석 체크하기
+                </Button>
+              )}
             </div>
 
-            {gym.ownerId && (
+            {gym.ownerId && myMembershipStatus !== "ACTIVE" && (
               <div className="mt-3 flex items-center justify-between gap-3">
                 <p className="text-xs text-muted-foreground">
                   {myMembershipStatus === "ACTIVE"
@@ -368,8 +359,8 @@ const GymDetail = () => {
                     : "무료로 등록 신청하면 출석 체크를 이용할 수 있어요."}
                 </p>
                 <Button
-                  variant={myMembershipStatus ? "outline" : "gradient"}
-                  size="sm"
+                  variant="gradient"
+                  size="lg"
                   disabled={myMembershipStatus != null || isRequestingJoin}
                   onClick={handleRequestJoin}
                 >
@@ -384,6 +375,12 @@ const GymDetail = () => {
                     ? "승인 대기중"
                     : "등록 신청"}
                 </Button>
+              </div>
+            )}
+
+            {!gym.ownerId && (
+              <div className="mt-3 rounded-lg bg-secondary/50 px-3 py-2.5 text-center text-xs text-muted-foreground">
+                아직 등록 신청을 받지 않는 체육관입니다
               </div>
             )}
           </div>
@@ -626,6 +623,19 @@ const GymDetail = () => {
             </div>
           </TabsContent>
         </Tabs>
+
+        <div className="mt-8 pt-6 border-t border-border flex flex-col items-center gap-2 text-center">
+          <p className="text-xs text-muted-foreground">가격이 다르거나 문제가 있나요?</p>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleReport}
+            className="text-muted-foreground hover:text-destructive"
+          >
+            <Flag className="w-4 h-4 mr-1.5" />
+            신고하기
+          </Button>
+        </div>
       </div>
     </div>
   );
