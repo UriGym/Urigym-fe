@@ -70,7 +70,7 @@ const Index = () => {
       try {
         const [nearby, ranked] = await Promise.all([
           gymsApi.getNearby(center.lat, center.lng, NEARBY_RADIUS_KM),
-          gymsApi.getRanked(5),
+          gymsApi.getRanked(5, center.lat, center.lng, NEARBY_RADIUS_KM),
         ]);
         setGyms(nearby ?? []);
         setRankedGyms(ranked ?? []);
