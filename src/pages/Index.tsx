@@ -70,7 +70,7 @@ const Index = () => {
       try {
         const [nearby, ranked] = await Promise.all([
           gymsApi.getNearby(center.lat, center.lng, NEARBY_RADIUS_KM),
-          gymsApi.getRanked(5),
+          gymsApi.getRanked(5, center.lat, center.lng, NEARBY_RADIUS_KM),
         ]);
         setGyms(nearby ?? []);
         setRankedGyms(ranked ?? []);
@@ -98,7 +98,7 @@ const Index = () => {
             ? distanceKm(fetchCenter, { lat: gym.lat, lng: gym.lng })
             : null,
       }))
-      .filter(({ distance }) => showRankedOnly || distance == null || distance <= NEARBY_RADIUS_KM)
+      .filter(({ distance }) => distance == null || distance <= NEARBY_RADIUS_KM)
       .sort((a, b) => {
         if (showRankedOnly) return 0; // preserve ranking order
         if (a.distance == null) return 1;
