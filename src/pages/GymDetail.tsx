@@ -23,7 +23,7 @@ import { toast } from "sonner";
 import { gymsApi } from "@/api/gyms";
 import { GymMap } from "@/components/gym/GymMap";
 import { paymentsApi } from "@/api/payments";
-import { loadTossPayments } from "@/lib/tossPayments";
+import { loadTossPayments, isTossSandbox } from "@/lib/tossPayments";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import type {
@@ -346,6 +346,14 @@ const GymDetail = () => {
 
             <div className="gym-card p-4">
               <h3 className="font-semibold mb-3">회원권 안내</h3>
+              {isTossSandbox() && (
+                <div className="mb-3 flex items-start gap-2 rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-3">
+                  <AlertTriangle className="w-4 h-4 text-yellow-600 shrink-0 mt-0.5" />
+                  <p className="text-xs text-yellow-700">
+                    결제 테스트 모드입니다. 실제 결제가 이루어지지 않습니다.
+                  </p>
+                </div>
+              )}
               {plans.length > 0 ? (
                 <div className="divide-y divide-border">
                   {plans.map((plan) => (
