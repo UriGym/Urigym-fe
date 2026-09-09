@@ -101,7 +101,7 @@ const MyPage = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <Header title="마이페이지" showLocation={false} />
+      <Header showLocation={false} />
 
       <main className="pt-20 px-4 space-y-6">
         <div className="gym-card p-5 animate-fade-in">
