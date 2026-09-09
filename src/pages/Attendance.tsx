@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Header } from "@/components/layout/Header";
-import { BottomNav } from "@/components/layout/BottomNav";
 import { AttendanceCard } from "@/components/attendance/AttendanceCard";
 import { Button } from "@/components/ui/button";
 import { Calendar, TrendingUp, Award, Loader2, LogIn } from "lucide-react";
@@ -77,18 +75,14 @@ const Attendance = () => {
 
   if (!isAuthLoading && !isAuthenticated) {
     return (
-      <div className="min-h-screen bg-background pb-20">
-        <Header showLocation={false} />
-        <main className="pt-20 px-4">
-          <div className="gym-card p-8 text-center">
-            <p className="text-muted-foreground mb-4">출석 체크는 로그인 후 이용할 수 있습니다.</p>
-            <Button onClick={() => navigate("/login")} className="gap-2">
-              <LogIn className="w-4 h-4" />
-              로그인하기
-            </Button>
-          </div>
-        </main>
-        <BottomNav />
+      <div className="pt-4 px-4">
+        <div className="gym-card p-8 text-center">
+          <p className="text-muted-foreground mb-4">출석 체크는 로그인 후 이용할 수 있습니다.</p>
+          <Button onClick={() => navigate("/login")} className="gap-2">
+            <LogIn className="w-4 h-4" />
+            로그인하기
+          </Button>
+        </div>
       </div>
     );
   }
@@ -96,10 +90,7 @@ const Attendance = () => {
   const streak = calculateStreak(records);
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <Header showLocation={false} />
-
-      <main className="pt-20 px-4 space-y-6">
+    <div className="pt-4 px-4 space-y-6">
         <div className="grid grid-cols-3 gap-3 animate-fade-in">
           <div className="gym-card p-4 text-center">
             <Calendar className="w-6 h-6 mx-auto mb-2 text-primary" />
@@ -212,9 +203,6 @@ const Attendance = () => {
             )}
           </div>
         </div>
-      </main>
-
-      <BottomNav />
     </div>
   );
 };

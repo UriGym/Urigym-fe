@@ -95,7 +95,7 @@ const Support = () => {
 
   return (
     <div className="min-h-screen bg-background pb-10">
-      <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
+      <header className="fixed top-16 left-0 right-0 z-40 glass border-b border-border/50">
         <div className="flex items-center gap-3 px-4 py-3 max-w-lg mx-auto">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft className="w-5 h-5" />
@@ -104,7 +104,7 @@ const Support = () => {
         </div>
       </header>
 
-      <main className="pt-20 px-4 max-w-lg mx-auto">
+      <main className="pt-32 px-4 max-w-lg mx-auto">
         <Tabs defaultValue="new">
           <TabsList className="w-full grid grid-cols-2 bg-secondary/50">
             <TabsTrigger value="new">문의 / 신고하기</TabsTrigger>

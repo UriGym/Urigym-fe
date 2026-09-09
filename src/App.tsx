@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { RoleRoute } from "./components/auth/RoleRoute";
+import { AppLayout } from "./components/layout/AppLayout";
 import Index from "./pages/Index";
 import GymDetail from "./pages/GymDetail";
 import Search from "./pages/Search";
@@ -35,7 +36,9 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Index />} />
+            {/* Header/BottomNav are rendered once by AppLayout so every in-app screen gets
+                them identically — screens outside this group (auth + payment redirects)
+                are the deliberate exceptions, not a place to add more without asking. */}
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/oauth/naver/callback" element={<NaverCallback />} />
@@ -48,76 +51,80 @@ const App = () => (
               }
             />
             <Route path="/payments/fail" element={<PaymentFail />} />
-            <Route
-              path="/mypage/account"
-              element={
-                <RoleRoute>
-                  <AccountSettings />
-                </RoleRoute>
-              }
-            />
-            <Route
-              path="/mypage/notifications"
-              element={
-                <RoleRoute>
-                  <NotificationSettings />
-                </RoleRoute>
-              }
-            />
-            <Route path="/gym/:id" element={<GymDetail />} />
-            <Route path="/search" element={<Search />} />
-            <Route path="/attendance" element={<Attendance />} />
-            <Route path="/mypage" element={<MyPage />} />
-            <Route
-              path="/mypage/gyms"
-              element={
-                <RoleRoute>
-                  <MyGyms />
-                </RoleRoute>
-              }
-            />
-            <Route
-              path="/mypage/attendance"
-              element={
-                <RoleRoute>
-                  <AttendanceHistory />
-                </RoleRoute>
-              }
-            />
-            <Route
-              path="/support"
-              element={
-                <RoleRoute>
-                  <Support />
-                </RoleRoute>
-              }
-            />
-            <Route
-              path="/owner-application"
-              element={
-                <RoleRoute allow={["USER", "OWNER"]}>
-                  <OwnerApplication />
-                </RoleRoute>
-              }
-            />
-            <Route
-              path="/owner"
-              element={
-                <RoleRoute allow={["OWNER"]}>
-                  <OwnerDashboard />
-                </RoleRoute>
-              }
-            />
-            <Route
-              path="/admin"
-              element={
-                <RoleRoute allow={["ADMIN"]}>
-                  <AdminDashboard />
-                </RoleRoute>
-              }
-            />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
+
+            <Route element={<AppLayout />}>
+              <Route path="/" element={<Index />} />
+              <Route
+                path="/mypage/account"
+                element={
+                  <RoleRoute>
+                    <AccountSettings />
+                  </RoleRoute>
+                }
+              />
+              <Route
+                path="/mypage/notifications"
+                element={
+                  <RoleRoute>
+                    <NotificationSettings />
+                  </RoleRoute>
+                }
+              />
+              <Route path="/gym/:id" element={<GymDetail />} />
+              <Route path="/search" element={<Search />} />
+              <Route path="/attendance" element={<Attendance />} />
+              <Route path="/mypage" element={<MyPage />} />
+              <Route
+                path="/mypage/gyms"
+                element={
+                  <RoleRoute>
+                    <MyGyms />
+                  </RoleRoute>
+                }
+              />
+              <Route
+                path="/mypage/attendance"
+                element={
+                  <RoleRoute>
+                    <AttendanceHistory />
+                  </RoleRoute>
+                }
+              />
+              <Route
+                path="/support"
+                element={
+                  <RoleRoute>
+                    <Support />
+                  </RoleRoute>
+                }
+              />
+              <Route
+                path="/owner-application"
+                element={
+                  <RoleRoute allow={["USER", "OWNER"]}>
+                    <OwnerApplication />
+                  </RoleRoute>
+                }
+              />
+              <Route
+                path="/owner"
+                element={
+                  <RoleRoute allow={["OWNER"]}>
+                    <OwnerDashboard />
+                  </RoleRoute>
+                }
+              />
+              <Route
+                path="/admin"
+                element={
+                  <RoleRoute allow={["ADMIN"]}>
+                    <AdminDashboard />
+                  </RoleRoute>
+                }
+              />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Route>
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
