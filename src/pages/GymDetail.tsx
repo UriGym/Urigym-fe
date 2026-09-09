@@ -14,6 +14,7 @@ import {
   Calendar,
   MessageCircleQuestion,
   CreditCard,
+  UserPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +22,7 @@ import { GymImage } from "@/components/gym/GymImage";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { gymsApi } from "@/api/gyms";
+import { membershipsApi } from "@/api/misc";
 import { GymMap } from "@/components/gym/GymMap";
 import { paymentsApi } from "@/api/payments";
 import { loadTossPayments, isTossSandbox } from "@/lib/tossPayments";
@@ -52,6 +54,8 @@ const GymDetail = () => {
   const [purchasingPlanId, setPurchasingPlanId] = useState<string | null>(null);
   const [isFavorited, setIsFavorited] = useState(false);
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
+  const [myMembershipStatus, setMyMembershipStatus] = useState<string | null>(null);
+  const [isRequestingJoin, setIsRequestingJoin] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -91,6 +95,37 @@ const GymDetail = () => {
       .then((status) => setIsFavorited(status?.favorited ?? false))
       .catch(() => setIsFavorited(false));
   }, [id, isAuthenticated]);
+
+  useEffect(() => {
+    if (!id || !isAuthenticated) {
+      setMyMembershipStatus(null);
+      return;
+    }
+    membershipsApi
+      .getMine()
+      .then((list) => setMyMembershipStatus(list?.find((m) => m.gym.id === id)?.status ?? null))
+      .catch(() => setMyMembershipStatus(null));
+  }, [id, isAuthenticated]);
+
+  const handleRequestJoin = async () => {
+    if (!isAuthenticated) {
+      toast.error("등록 신청은 로그인 후 이용할 수 있습니다.");
+      navigate("/login");
+      return;
+    }
+    if (!id || myMembershipStatus || isRequestingJoin) return;
+
+    setIsRequestingJoin(true);
+    try {
+      await gymsApi.requestJoin(id);
+      setMyMembershipStatus("PENDING");
+      toast.success("등록 신청이 접수되었습니다. 관장 승인 후 출석 체크가 가능합니다.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "등록 신청에 실패했습니다.");
+    } finally {
+      setIsRequestingJoin(false);
+    }
+  };
 
   const handleToggleFavorite = async () => {
     if (!isAuthenticated) {
@@ -322,6 +357,35 @@ const GymDetail = () => {
                 신고하기
               </Button>
             </div>
+
+            {gym.ownerId && (
+              <div className="mt-3 flex items-center justify-between gap-3">
+                <p className="text-xs text-muted-foreground">
+                  {myMembershipStatus === "ACTIVE"
+                    ? "등록된 관원입니다."
+                    : myMembershipStatus === "PENDING"
+                    ? "관장 승인을 기다리고 있어요."
+                    : "무료로 등록 신청하면 출석 체크를 이용할 수 있어요."}
+                </p>
+                <Button
+                  variant={myMembershipStatus ? "outline" : "gradient"}
+                  size="sm"
+                  disabled={myMembershipStatus != null || isRequestingJoin}
+                  onClick={handleRequestJoin}
+                >
+                  {isRequestingJoin ? (
+                    <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                  ) : (
+                    <UserPlus className="w-4 h-4 mr-1.5" />
+                  )}
+                  {myMembershipStatus === "ACTIVE"
+                    ? "등록됨"
+                    : myMembershipStatus === "PENDING"
+                    ? "승인 대기중"
+                    : "등록 신청"}
+                </Button>
+              </div>
+            )}
           </div>
         </div>
 

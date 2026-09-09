@@ -50,6 +50,12 @@ export const ownerApi = {
   removeMember: async (gymId: string, memberId: string) =>
     apiClient.delete<void>(`/owner/gyms/${gymId}/members/${memberId}`),
 
+  approveMember: async (gymId: string, memberId: string) =>
+    (await apiClient.post<GymMemberResponse>(`/owner/gyms/${gymId}/members/${memberId}/approve`)).data,
+
+  rejectMember: async (gymId: string, memberId: string) =>
+    apiClient.post<void>(`/owner/gyms/${gymId}/members/${memberId}/reject`),
+
   // 회원권
   createMembershipPlan: async (gymId: string, data: MembershipPlanRequest) =>
     (await apiClient.post<MembershipPlanResponse>(`/owner/gyms/${gymId}/membership-plans`, data)).data,
