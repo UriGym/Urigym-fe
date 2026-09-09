@@ -139,7 +139,7 @@ const OwnerDashboard = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen pt-16 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
@@ -147,7 +147,7 @@ const OwnerDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
+      <header className="fixed top-16 left-0 right-0 z-40 glass border-b border-border/50">
         <div className="flex items-center justify-between gap-3 px-4 py-3 max-w-4xl mx-auto">
           <div className="flex items-center gap-2 min-w-0">
             <Button variant="ghost" size="icon" onClick={() => navigate("/mypage")}>
@@ -173,7 +173,7 @@ const OwnerDashboard = () => {
         </div>
       </header>
 
-      <main className="pt-20 pb-10 px-4 max-w-4xl mx-auto space-y-6">
+      <main className="pt-32 pb-10 px-4 max-w-4xl mx-auto space-y-6">
         {gyms.length === 0 ? (
           <div className="gym-card p-8 text-center space-y-4">
             <Building2 className="w-12 h-12 mx-auto text-muted-foreground" />

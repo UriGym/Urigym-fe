@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Header } from "@/components/layout/Header";
-import { BottomNav } from "@/components/layout/BottomNav";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
@@ -100,10 +98,7 @@ const MyPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <Header showLocation={false} />
-
-      <main className="pt-20 px-4 space-y-6">
+    <div className="pt-4 px-4 space-y-6">
         <div className="gym-card p-5 animate-fade-in">
           {isAuthenticated && user ? (
             <>
@@ -227,9 +222,6 @@ const MyPage = () => {
         )}
 
         <p className="text-center text-xs text-muted-foreground pb-4">우리짐 v1.0.0</p>
-      </main>
-
-      <BottomNav />
     </div>
   );
 };

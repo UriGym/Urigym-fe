@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search as SearchIcon, SlidersHorizontal, X, Loader2 } from "lucide-react";
-import { Header } from "@/components/layout/Header";
-import { BottomNav } from "@/components/layout/BottomNav";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -51,10 +49,7 @@ const Search = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <Header showLocation={false} />
-
-      <main className="pt-20 px-4 space-y-6">
+    <div className="pt-4 px-4 space-y-6">
         {/* Search Input */}
         <div className="flex gap-2 animate-fade-in">
           <div className="relative flex-1">
@@ -179,9 +174,6 @@ const Search = () => {
             )}
           </div>
         )}
-      </main>
-
-      <BottomNav />
     </div>
   );
 };
