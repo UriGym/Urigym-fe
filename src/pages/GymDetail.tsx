@@ -352,9 +352,7 @@ const GymDetail = () => {
             {gym.ownerId && myMembershipStatus !== "ACTIVE" && (
               <div className="mt-3 flex items-center justify-between gap-3">
                 <p className="text-xs text-muted-foreground">
-                  {myMembershipStatus === "ACTIVE"
-                    ? "등록된 관원입니다."
-                    : myMembershipStatus === "PENDING"
+                  {myMembershipStatus === "PENDING"
                     ? "관장 승인을 기다리고 있어요."
                     : "무료로 등록 신청하면 출석 체크를 이용할 수 있어요."}
                 </p>
@@ -369,11 +367,7 @@ const GymDetail = () => {
                   ) : (
                     <UserPlus className="w-4 h-4 mr-1.5" />
                   )}
-                  {myMembershipStatus === "ACTIVE"
-                    ? "등록됨"
-                    : myMembershipStatus === "PENDING"
-                    ? "승인 대기중"
-                    : "등록 신청"}
+                  {myMembershipStatus === "PENDING" ? "승인 대기중" : "등록 신청"}
                 </Button>
               </div>
             )}
