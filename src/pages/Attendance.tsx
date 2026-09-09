@@ -7,10 +7,8 @@ import { toast } from "sonner";
 import { attendanceApi } from "@/api/attendance";
 import { membershipsApi } from "@/api/misc";
 import { useAuth } from "@/contexts/AuthContext";
+import { GymImage } from "@/components/gym/GymImage";
 import type { AttendanceResponse, GymResponse } from "@/api/types";
-
-const FALLBACK_IMAGE =
-  "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=100&h=100&fit=crop";
 
 const Attendance = () => {
   const navigate = useNavigate();
@@ -127,10 +125,11 @@ const Attendance = () => {
                       : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
                   }`}
                 >
-                  <img
-                    src={gym.imageUrl || FALLBACK_IMAGE}
+                  <GymImage
+                    src={gym.imageUrl}
                     alt={gym.name}
-                    className="w-10 h-10 rounded-lg object-cover"
+                    className="w-10 h-10 rounded-lg"
+                    compact
                   />
                   <div className="text-left">
                     <p className="font-medium text-sm">{gym.name}</p>
