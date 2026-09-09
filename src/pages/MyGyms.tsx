@@ -37,14 +37,17 @@ const MyGyms = () => {
 
   const handleCancel = async () => {
     if (!cancelling) return;
+    const isPending = cancelling.status === "PENDING";
     setIsSubmitting(true);
     try {
       await membershipsApi.cancel(cancelling.id);
-      toast.success(`${cancelling.gym.name} 회원권을 해지했습니다.`);
+      toast.success(
+        isPending ? `${cancelling.gym.name} 등록 신청을 취소했습니다.` : `${cancelling.gym.name} 회원권을 해지했습니다.`
+      );
       setCancelling(null);
       load();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "해지에 실패했습니다.");
+      toast.error(error instanceof Error ? error.message : (isPending ? "신청 취소에 실패했습니다." : "해지에 실패했습니다."));
     } finally {
       setIsSubmitting(false);
     }
@@ -94,22 +97,27 @@ const MyGyms = () => {
                   </p>
                   <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                     <Calendar className="w-3.5 h-3.5 shrink-0" />
-                    {new Date(membership.joinedAt).toLocaleDateString("ko-KR")} 가입
+                    {new Date(membership.joinedAt).toLocaleDateString("ko-KR")}{" "}
+                    {membership.status === "PENDING" ? "신청" : "가입"}
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
-                <p className="text-sm">
-                  총 출석 <span className="font-semibold text-primary">{membership.attendanceCount}</span>회
-                  {membership.lastCheckInTime && (
-                    <span className="text-muted-foreground">
-                      {" "}
-                      · 마지막 방문{" "}
-                      {new Date(membership.lastCheckInTime).toLocaleDateString("ko-KR")}
-                    </span>
-                  )}
-                </p>
+                {membership.status === "PENDING" ? (
+                  <p className="text-sm text-muted-foreground">관장 승인 대기중</p>
+                ) : (
+                  <p className="text-sm">
+                    총 출석 <span className="font-semibold text-primary">{membership.attendanceCount}</span>회
+                    {membership.lastCheckInTime && (
+                      <span className="text-muted-foreground">
+                        {" "}
+                        · 마지막 방문{" "}
+                        {new Date(membership.lastCheckInTime).toLocaleDateString("ko-KR")}
+                      </span>
+                    )}
+                  </p>
+                )}
                 <Button
                   variant="ghost"
                   size="sm"
@@ -117,7 +125,7 @@ const MyGyms = () => {
                   onClick={() => setCancelling(membership)}
                 >
                   <XCircle className="w-4 h-4 mr-1" />
-                  해지
+                  {membership.status === "PENDING" ? "신청 취소" : "해지"}
                 </Button>
               </div>
             </div>
@@ -128,10 +136,18 @@ const MyGyms = () => {
       <AlertDialog open={!!cancelling} onOpenChange={(open) => !open && setCancelling(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>회원권을 해지할까요?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {cancelling?.status === "PENDING" ? "등록 신청을 취소할까요?" : "회원권을 해지할까요?"}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              {cancelling?.gym.name}의 회원권을 해지합니다. 해지 후에는 이 체육관에서 출석 체크를 할 수
-              없고, 다시 이용하려면 체육관에 재등록해야 합니다. 지금까지의 출석 기록은 그대로 남습니다.
+              {cancelling?.status === "PENDING" ? (
+                <>{cancelling?.gym.name} 등록 신청을 취소합니다. 다시 신청하려면 체육관 페이지에서 재신청해야 합니다.</>
+              ) : (
+                <>
+                  {cancelling?.gym.name}의 회원권을 해지합니다. 해지 후에는 이 체육관에서 출석 체크를 할 수
+                  없고, 다시 이용하려면 체육관에 재등록해야 합니다. 지금까지의 출석 기록은 그대로 남습니다.
+                </>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -142,7 +158,7 @@ const MyGyms = () => {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              해지하기
+              {cancelling?.status === "PENDING" ? "신청 취소하기" : "해지하기"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
