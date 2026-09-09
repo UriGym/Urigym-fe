@@ -18,9 +18,15 @@ export const gymsApi = {
     return response.data;
   },
 
-  // AI 추천 랭킹 조회
-  getRanked: async (limit = 5) => {
-    const response = await apiClient.get<GymResponse[]>(`/gyms/ranked?limit=${limit}`);
+  // AI 추천 랭킹 조회 (lat/lng 지정 시 radiusKm 반경 내 후보로만 스코어링)
+  getRanked: async (limit = 5, lat?: number, lng?: number, radiusKm?: number) => {
+    const params = new URLSearchParams({ limit: String(limit) });
+    if (lat != null && lng != null) {
+      params.set("lat", String(lat));
+      params.set("lng", String(lng));
+      if (radiusKm != null) params.set("radiusKm", String(radiusKm));
+    }
+    const response = await apiClient.get<GymResponse[]>(`/gyms/ranked?${params.toString()}`);
     return response.data;
   },
 
