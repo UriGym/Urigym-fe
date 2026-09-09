@@ -91,6 +91,15 @@ const OwnerDashboard = () => {
     [gyms, selectedGymId]
   );
 
+  const pendingMembers = useMemo(
+    () => members.filter((member) => member.status === "PENDING"),
+    [members]
+  );
+  const activeMembers = useMemo(
+    () => members.filter((member) => member.status !== "PENDING"),
+    [members]
+  );
+
   const loadGyms = useCallback(async () => {
     try {
       const myGyms = (await ownerApi.getMyGyms()) ?? [];
@@ -226,11 +235,29 @@ const OwnerDashboard = () => {
 
               <TabsContent value="members" className="mt-4 space-y-4">
                 <MemberDialog gymId={selectedGymId!} onSaved={refresh} />
-                {members.length === 0 ? (
+                {pendingMembers.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold mb-2 flex items-center gap-2 text-sm">
+                      <Clock className="w-4 h-4 text-accent" />
+                      등록 대기중 ({pendingMembers.length})
+                    </h3>
+                    <div className="gym-card divide-y divide-border border-l-4 border-accent">
+                      {pendingMembers.map((member) => (
+                        <PendingMemberRow
+                          key={member.id}
+                          member={member}
+                          gymId={selectedGymId!}
+                          onChanged={refresh}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {activeMembers.length === 0 ? (
                   <EmptyBlock message="등록된 관원이 없습니다." />
                 ) : (
                   <div className="gym-card divide-y divide-border">
-                    {members.map((member) => (
+                    {activeMembers.map((member) => (
                       <MemberRow
                         key={member.id}
                         member={member}
@@ -515,6 +542,66 @@ const MemberRow = ({
           className="text-destructive hover:text-destructive"
         >
           <Trash2 className="w-4 h-4" />
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+const PendingMemberRow = ({
+  member,
+  gymId,
+  onChanged,
+}: {
+  member: GymMemberResponse;
+  gymId: string;
+  onChanged: () => void;
+}) => {
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const approve = async () => {
+    setIsProcessing(true);
+    try {
+      await ownerApi.approveMember(gymId, member.id);
+      toast.success("등록 신청을 승인했습니다.");
+      onChanged();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "승인에 실패했습니다.");
+      setIsProcessing(false);
+    }
+  };
+
+  const reject = async () => {
+    setIsProcessing(true);
+    try {
+      await ownerApi.rejectMember(gymId, member.id);
+      toast.success("등록 신청을 거절했습니다.");
+      onChanged();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "거절에 실패했습니다.");
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-3 p-4">
+      <div className="w-9 h-9 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
+        <span className="text-sm font-medium">
+          {member.userName?.[0] ?? member.userEmail[0].toUpperCase()}
+        </span>
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-medium truncate">{member.userName || member.userEmail}</p>
+        <p className="text-xs text-muted-foreground truncate">
+          {member.userPhone || member.userEmail}
+        </p>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        <Button size="sm" variant="gradient" disabled={isProcessing} onClick={approve}>
+          수락
+        </Button>
+        <Button size="sm" variant="outline" disabled={isProcessing} onClick={reject}>
+          거절
         </Button>
       </div>
     </div>

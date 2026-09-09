@@ -3,6 +3,7 @@ import type {
   AnnouncementResponse,
   EventResponse,
   FavoriteStatusResponse,
+  GymMemberResponse,
   GymResponse,
   MembershipPlanResponse,
   PageResponse,
@@ -128,6 +129,12 @@ export const gymsApi = {
     const response = await apiClient.get<PageResponse<GymResponse>>(
       `/me/favorites?page=${page}&size=${size}`
     );
+    return response.data;
+  },
+
+  // 체육관 등록(무료) 신청
+  requestJoin: async (gymId: string) => {
+    const response = await apiClient.post<GymMemberResponse>(`/gyms/${gymId}/join-requests`);
     return response.data;
   },
 };
