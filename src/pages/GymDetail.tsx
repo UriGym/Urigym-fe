@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { GymImage } from "@/components/gym/GymImage";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { gymsApi } from "@/api/gyms";
@@ -32,9 +33,6 @@ import type {
   MembershipPlanResponse,
   ReviewResponse,
 } from "@/api/types";
-
-const FALLBACK_IMAGE =
-  "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&h=600&fit=crop";
 
 const GymDetail = () => {
   const { id } = useParams();
@@ -205,11 +203,7 @@ const GymDetail = () => {
     <div className="min-h-screen bg-background pb-24 pt-16">
       {/* Hero Image */}
       <div className="relative h-64">
-        <img
-          src={gym.imageUrl || FALLBACK_IMAGE}
-          alt={gym.name}
-          className="w-full h-full object-cover"
-        />
+        <GymImage src={gym.imageUrl} alt={gym.name} className="w-full h-full" />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
 
         <div className="absolute top-0 left-0 right-0 flex justify-between items-center p-4">

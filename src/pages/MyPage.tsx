@@ -19,6 +19,7 @@ import {
   Shield,
   Building2,
   ShieldCheck,
+  Heart,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -84,7 +85,10 @@ const MyPage = () => {
     ...(roleSection.length > 0 ? [{ section: "권한", items: roleSection }] : []),
     {
       section: "내 체육관",
-      items: [{ icon: Calendar, label: "출석 기록", path: "/attendance" }],
+      items: [
+        { icon: Calendar, label: "출석 기록", path: "/attendance" },
+        { icon: Heart, label: "찜한 체육관", path: "/mypage/favorites" },
+      ],
     },
     {
       section: "기타",

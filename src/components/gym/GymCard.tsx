@@ -1,10 +1,8 @@
 import { Star, MapPin, MessageSquare, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { GymImage } from "@/components/gym/GymImage";
 import { cn } from "@/lib/utils";
 import type { GymResponse } from "@/api/types";
-
-const FALLBACK_IMAGE =
-  "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&h=300&fit=crop";
 
 export type GymData = GymResponse & {
   /** Pre-formatted distance from the viewer, e.g. "1.2km". */
@@ -25,11 +23,7 @@ export const GymCard = ({ gym, onClick, onRatingClick, className }: GymCardProps
   return (
     <div className={cn("gym-card overflow-hidden cursor-pointer", className)} onClick={onClick}>
       <div className="relative">
-        <img
-          src={gym.imageUrl || FALLBACK_IMAGE}
-          alt={gym.name}
-          className="w-full h-40 object-cover"
-        />
+        <GymImage src={gym.imageUrl} alt={gym.name} className="w-full h-40" />
         <div className="absolute top-3 left-3 flex gap-2">
           <Badge
             variant="secondary"

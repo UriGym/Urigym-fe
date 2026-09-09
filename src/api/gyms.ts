@@ -116,6 +116,14 @@ export const gymsApi = {
     const response = await apiClient.post<FavoriteStatusResponse>(`/gyms/${gymId}/favorite`);
     return response.data;
   },
+
+  // 내 찜 목록 조회
+  getMyFavorites: async (page = 0, size = 10) => {
+    const response = await apiClient.get<PageResponse<GymResponse>>(
+      `/me/favorites?page=${page}&size=${size}`
+    );
+    return response.data;
+  },
 };
 
 export default gymsApi;
