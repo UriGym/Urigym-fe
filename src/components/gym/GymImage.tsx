@@ -5,6 +5,8 @@ interface GymImageProps {
   src?: string | null;
   alt: string;
   className?: string;
+  /** Small thumbnail contexts (e.g. 40px chips): icon only, no label text. */
+  compact?: boolean;
 }
 
 /**
@@ -13,7 +15,7 @@ interface GymImageProps {
  * like it had a real, identical photo. Show a clearly-labeled placeholder
  * instead.
  */
-export const GymImage = ({ src, alt, className }: GymImageProps) => {
+export const GymImage = ({ src, alt, className, compact }: GymImageProps) => {
   if (!src) {
     return (
       <div
@@ -22,8 +24,8 @@ export const GymImage = ({ src, alt, className }: GymImageProps) => {
           className
         )}
       >
-        <Dumbbell className="w-8 h-8" />
-        <span className="text-xs">등록된 사진 없음</span>
+        <Dumbbell className={compact ? "w-4 h-4" : "w-8 h-8"} />
+        {!compact && <span className="text-xs">등록된 사진 없음</span>}
       </div>
     );
   }

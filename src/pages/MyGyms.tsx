@@ -14,10 +14,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { membershipsApi } from "@/api/misc";
+import { GymImage } from "@/components/gym/GymImage";
 import type { MyMembershipResponse } from "@/api/types";
-
-const FALLBACK_IMAGE =
-  "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=200&h=200&fit=crop";
 
 const MyGyms = () => {
   const navigate = useNavigate();
@@ -82,10 +80,11 @@ const MyGyms = () => {
                 className="flex gap-3 cursor-pointer"
                 onClick={() => navigate(`/gym/${membership.gym.id}`)}
               >
-                <img
-                  src={membership.gym.imageUrl || FALLBACK_IMAGE}
+                <GymImage
+                  src={membership.gym.imageUrl}
                   alt={membership.gym.name}
-                  className="w-16 h-16 rounded-lg object-cover shrink-0"
+                  className="w-16 h-16 rounded-lg shrink-0"
+                  compact
                 />
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold truncate">{membership.gym.name}</p>
