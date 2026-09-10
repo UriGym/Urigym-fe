@@ -23,6 +23,7 @@ const MyGyms = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [cancelling, setCancelling] = useState<MyMembershipResponse | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [acceptingId, setAcceptingId] = useState<string | null>(null);
 
   const load = useCallback(() => {
     setIsLoading(true);
@@ -38,18 +39,45 @@ const MyGyms = () => {
   const handleCancel = async () => {
     if (!cancelling) return;
     const isPending = cancelling.status === "PENDING";
+    const isInvited = cancelling.status === "INVITED";
     setIsSubmitting(true);
     try {
-      await membershipsApi.cancel(cancelling.id);
-      toast.success(
-        isPending ? `${cancelling.gym.name} 등록 신청을 취소했습니다.` : `${cancelling.gym.name} 회원권을 해지했습니다.`
-      );
+      if (isInvited) {
+        await membershipsApi.decline(cancelling.id);
+        toast.success(`${cancelling.gym.name} 초대를 거절했습니다.`);
+      } else {
+        await membershipsApi.cancel(cancelling.id);
+        toast.success(
+          isPending ? `${cancelling.gym.name} 등록 신청을 취소했습니다.` : `${cancelling.gym.name} 회원권을 해지했습니다.`
+        );
+      }
       setCancelling(null);
       load();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : (isPending ? "신청 취소에 실패했습니다." : "해지에 실패했습니다."));
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : isInvited
+            ? "거절에 실패했습니다."
+            : isPending
+              ? "신청 취소에 실패했습니다."
+              : "해지에 실패했습니다."
+      );
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleAccept = async (membership: MyMembershipResponse) => {
+    setAcceptingId(membership.id);
+    try {
+      await membershipsApi.accept(membership.id);
+      toast.success(`${membership.gym.name} 등록을 수락했습니다.`);
+      load();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "수락에 실패했습니다.");
+    } finally {
+      setAcceptingId(null);
     }
   };
 
@@ -98,7 +126,11 @@ const MyGyms = () => {
                   <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                     <Calendar className="w-3.5 h-3.5 shrink-0" />
                     {new Date(membership.joinedAt).toLocaleDateString("ko-KR")}{" "}
-                    {membership.status === "PENDING" ? "신청" : "가입"}
+                    {membership.status === "PENDING"
+                      ? "신청"
+                      : membership.status === "INVITED"
+                        ? "초대"
+                        : "가입"}
                   </p>
                 </div>
               </div>
@@ -106,6 +138,10 @@ const MyGyms = () => {
               <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
                 {membership.status === "PENDING" ? (
                   <p className="text-sm text-muted-foreground">관장 승인 대기중</p>
+                ) : membership.status === "INVITED" ? (
+                  <p className="text-sm text-muted-foreground">
+                    {membership.gym.name} 체육관에서 등록을 초대했습니다
+                  </p>
                 ) : (
                   <p className="text-sm">
                     총 출석 <span className="font-semibold text-primary">{membership.attendanceCount}</span>회
@@ -118,15 +154,35 @@ const MyGyms = () => {
                     )}
                   </p>
                 )}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-destructive hover:text-destructive shrink-0"
-                  onClick={() => setCancelling(membership)}
-                >
-                  <XCircle className="w-4 h-4 mr-1" />
-                  {membership.status === "PENDING" ? "신청 취소" : "해지"}
-                </Button>
+                {membership.status === "INVITED" ? (
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      size="sm"
+                      disabled={acceptingId === membership.id}
+                      onClick={() => handleAccept(membership)}
+                    >
+                      수락
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => setCancelling(membership)}
+                    >
+                      거절
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive shrink-0"
+                    onClick={() => setCancelling(membership)}
+                  >
+                    <XCircle className="w-4 h-4 mr-1" />
+                    {membership.status === "PENDING" ? "신청 취소" : "해지"}
+                  </Button>
+                )}
               </div>
             </div>
           ))
@@ -137,11 +193,17 @@ const MyGyms = () => {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {cancelling?.status === "PENDING" ? "등록 신청을 취소할까요?" : "회원권을 해지할까요?"}
+              {cancelling?.status === "PENDING"
+                ? "등록 신청을 취소할까요?"
+                : cancelling?.status === "INVITED"
+                  ? "초대를 거절할까요?"
+                  : "회원권을 해지할까요?"}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {cancelling?.status === "PENDING" ? (
                 <>{cancelling?.gym.name} 등록 신청을 취소합니다. 다시 신청하려면 체육관 페이지에서 재신청해야 합니다.</>
+              ) : cancelling?.status === "INVITED" ? (
+                <>{cancelling?.gym.name}의 등록 초대를 거절합니다. 다시 등록하려면 관장에게 재초대를 요청해야 합니다.</>
               ) : (
                 <>
                   {cancelling?.gym.name}의 회원권을 해지합니다. 해지 후에는 이 체육관에서 출석 체크를 할 수
@@ -158,7 +220,11 @@ const MyGyms = () => {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {cancelling?.status === "PENDING" ? "신청 취소하기" : "해지하기"}
+              {cancelling?.status === "PENDING"
+                ? "신청 취소하기"
+                : cancelling?.status === "INVITED"
+                  ? "거절하기"
+                  : "해지하기"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

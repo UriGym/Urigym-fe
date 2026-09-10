@@ -354,7 +354,9 @@ const GymDetail = () => {
                 <p className="text-xs text-muted-foreground">
                   {myMembershipStatus === "PENDING"
                     ? "관장 승인을 기다리고 있어요."
-                    : "무료로 등록 신청하면 출석 체크를 이용할 수 있어요."}
+                    : myMembershipStatus === "INVITED"
+                      ? "관장님이 등록을 초대했어요. 마이페이지에서 수락해주세요."
+                      : "무료로 등록 신청하면 출석 체크를 이용할 수 있어요."}
                 </p>
                 <Button
                   variant="gradient"
@@ -367,7 +369,11 @@ const GymDetail = () => {
                   ) : (
                     <UserPlus className="w-4 h-4 mr-1.5" />
                   )}
-                  {myMembershipStatus === "PENDING" ? "승인 대기중" : "등록 신청"}
+                  {myMembershipStatus === "PENDING"
+                    ? "승인 대기중"
+                    : myMembershipStatus === "INVITED"
+                      ? "초대 대기중"
+                      : "등록 신청"}
                 </Button>
               </div>
             )}

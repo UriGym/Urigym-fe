@@ -95,8 +95,12 @@ const OwnerDashboard = () => {
     () => members.filter((member) => member.status === "PENDING"),
     [members]
   );
+  const invitedMembers = useMemo(
+    () => members.filter((member) => member.status === "INVITED"),
+    [members]
+  );
   const activeMembers = useMemo(
-    () => members.filter((member) => member.status !== "PENDING"),
+    () => members.filter((member) => member.status === "ACTIVE"),
     [members]
   );
 
@@ -244,6 +248,24 @@ const OwnerDashboard = () => {
                     <div className="gym-card divide-y divide-border border-l-4 border-accent">
                       {pendingMembers.map((member) => (
                         <PendingMemberRow
+                          key={member.id}
+                          member={member}
+                          gymId={selectedGymId!}
+                          onChanged={refresh}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {invitedMembers.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold mb-2 flex items-center gap-2 text-sm">
+                      <Clock className="w-4 h-4 text-accent" />
+                      초대 대기중 ({invitedMembers.length})
+                    </h3>
+                    <div className="gym-card divide-y divide-border border-l-4 border-accent">
+                      {invitedMembers.map((member) => (
+                        <InvitedMemberRow
                           key={member.id}
                           member={member}
                           gymId={selectedGymId!}
@@ -608,6 +630,52 @@ const PendingMemberRow = ({
   );
 };
 
+const InvitedMemberRow = ({
+  member,
+  gymId,
+  onChanged,
+}: {
+  member: GymMemberResponse;
+  gymId: string;
+  onChanged: () => void;
+}) => {
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const cancelInvite = async () => {
+    setIsProcessing(true);
+    try {
+      await ownerApi.removeMember(gymId, member.id);
+      toast.success("초대를 취소했습니다.");
+      onChanged();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "취소에 실패했습니다.");
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-3 p-4">
+      <div className="w-9 h-9 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
+        <span className="text-sm font-medium">
+          {member.userName?.[0] ?? member.userEmail[0].toUpperCase()}
+        </span>
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-medium truncate">{member.userName || member.userEmail}</p>
+        <p className="text-xs text-muted-foreground truncate">
+          {member.userPhone || member.userEmail}
+        </p>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        <span className="text-xs text-muted-foreground">초대 대기중</span>
+        <Button size="sm" variant="outline" disabled={isProcessing} onClick={cancelInvite}>
+          취소
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 const MembershipPlanRow = ({
   plan,
   gymId,
@@ -936,7 +1004,7 @@ const MemberDialog = ({ gymId, onSaved }: { gymId: string; onSaved: () => void }
     setIsSaving(true);
     try {
       await ownerApi.addMember(gymId, { userEmail: email });
-      toast.success("관원이 등록되었습니다.");
+      toast.success("초대를 보냈습니다. 상대방이 수락하면 등록됩니다.");
       setEmail("");
       setOpen(false);
       onSaved();
