@@ -5,8 +5,9 @@ export interface Coordinates {
   lng: number;
 }
 
-/** 경기도 시흥시 월곶동 — used until the browser grants a real position. */
-export const DEFAULT_CENTER: Coordinates = { lat: 37.3948, lng: 126.7368 };
+/** Fallback center until a real GPS fix (or error) resolves — centroid of the app's
+ *  real 월곶동 gyms (경기도 시흥시 월곶동), verified against live gym coordinates. */
+export const DEFAULT_CENTER: Coordinates = { lat: 37.39, lng: 126.7418 };
 
 interface GeolocationState {
   position: Coordinates | null;
@@ -66,7 +67,9 @@ export function useGeolocation() {
 
   return {
     ...state,
-    /** Real position when available, Seoul City Hall otherwise. */
+    // Real GPS position when available, DEFAULT_CENTER otherwise — including while the
+    // first fix is still loading. Check position/isLoading/error if you need to know
+    // whether this is the user's real location before treating it as one.
     center: state.position ?? DEFAULT_CENTER,
     refresh: locate,
   };
