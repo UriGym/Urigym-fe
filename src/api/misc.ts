@@ -44,6 +44,12 @@ export const membershipsApi = {
 
   cancel: async (membershipId: string) =>
     apiClient.delete<void>(`/memberships/mine/${membershipId}`),
+
+  accept: async (membershipId: string) =>
+    apiClient.post<void>(`/memberships/${membershipId}/accept`),
+
+  decline: async (membershipId: string) =>
+    apiClient.post<void>(`/memberships/${membershipId}/decline`),
 };
 
 export const uploadsApi = {
