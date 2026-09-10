@@ -20,7 +20,7 @@ const NEARBY_RADIUS_KM = 2;
 const Index = () => {
   const navigate = useNavigate();
   const { loginWithOAuth } = useAuth();
-  const { center, error: locationError, refresh } = useGeolocation();
+  const { center, position, error: locationError, isLoading: locationLoading, refresh } = useGeolocation();
   const [locationName, setLocationName] = useState<string | null>(null);
 
   // Naver's console-registered callback URL doesn't match our dedicated
@@ -46,12 +46,18 @@ const Index = () => {
   // only a real, meaningful move triggers a new nearby-gyms/reverse-geocode request.
   const centerKey = `${center.lat.toFixed(3)},${center.lng.toFixed(3)}`;
 
+  // True only before the very first GPS fix (success or failure) resolves — until then
+  // `center` is just the DEFAULT_CENTER placeholder, not a real location, so nothing
+  // below should show it or fetch by it as if it were one.
+  const awaitingFirstFix = locationLoading && position == null && locationError == null;
+
   useEffect(() => {
+    if (awaitingFirstFix) return;
     reverseGeocode(center)
       .then(setLocationName)
       .catch(() => setLocationName(null));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [centerKey]);
+  }, [centerKey, awaitingFirstFix]);
 
   const [viewMode, setViewMode] = useState<"list" | "map">("list");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -65,6 +71,7 @@ const Index = () => {
   const [fetchCenter, setFetchCenter] = useState(center);
 
   useEffect(() => {
+    if (awaitingFirstFix) return;
     const fetchGyms = async () => {
       setIsLoading(true);
       try {
@@ -83,7 +90,7 @@ const Index = () => {
     };
     fetchGyms();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [centerKey]);
+  }, [centerKey, awaitingFirstFix]);
 
   // Nearest first, with the distance from the current location attached. Gyms outside
   // NEARBY_RADIUS_KM are dropped so a location far from any registered gym shows none
