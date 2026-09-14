@@ -316,3 +316,25 @@ export interface ReportCreateRequest {
 export interface FavoriteStatusResponse {
   favorited: boolean;
 }
+
+export interface ChatRoomResponse {
+  id: string;
+  gymId: string;
+  gymName: string;
+  /** The other side of the 1:1 room — owner's name if I'm the inquirer, inquirer's name if I'm the owner. */
+  counterpartName: string;
+  lastMessage?: string | null;
+  lastMessageAt?: string | null;
+  unreadCount: number;
+  createdAt?: string;
+}
+
+export interface ChatMessageResponse {
+  id: string;
+  roomId: string;
+  senderId: string;
+  senderName?: string;
+  content: string;
+  isRead: boolean;
+  createdAt: string;
+}

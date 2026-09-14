@@ -13,6 +13,7 @@ import {
   AlertTriangle,
   Calendar,
   MessageCircleQuestion,
+  MessageCircle,
   CreditCard,
   UserPlus,
 } from "lucide-react";
@@ -20,9 +21,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { GymImage } from "@/components/gym/GymImage";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { gymsApi } from "@/api/gyms";
 import { membershipsApi } from "@/api/misc";
+import { chatApi } from "@/api/chat";
 import { GymMap } from "@/components/gym/GymMap";
 import { paymentsApi } from "@/api/payments";
 import { loadTossPayments, isTossSandbox } from "@/lib/tossPayments";
@@ -40,7 +49,7 @@ const GymDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const { center: myLocation } = useGeolocation();
 
   const initialTab = (location.state as { tab?: string } | null)?.tab ?? "info";
@@ -56,6 +65,8 @@ const GymDetail = () => {
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
   const [myMembershipStatus, setMyMembershipStatus] = useState<string | null>(null);
   const [isRequestingJoin, setIsRequestingJoin] = useState(false);
+  const [contactDialogOpen, setContactDialogOpen] = useState(false);
+  const [isCreatingRoom, setIsCreatingRoom] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -173,6 +184,28 @@ const GymDetail = () => {
     navigate(`/support?gymId=${id}`);
   };
 
+  const handleStartChat = async () => {
+    if (!isAuthenticated) {
+      toast.error("채팅 문의는 로그인 후 이용할 수 있습니다.");
+      setContactDialogOpen(false);
+      navigate("/login");
+      return;
+    }
+    if (!id || isCreatingRoom) return;
+
+    setIsCreatingRoom(true);
+    try {
+      const room = await chatApi.createOrGetChatRoom(id);
+      if (!room) throw new Error("채팅방을 생성하지 못했습니다.");
+      setContactDialogOpen(false);
+      navigate(`/chat/${room.id}`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "채팅 문의를 시작할 수 없습니다.");
+    } finally {
+      setIsCreatingRoom(false);
+    }
+  };
+
   const handlePurchase = async (plan: MembershipPlanResponse) => {
     if (!isAuthenticated) {
       toast.error("구매는 로그인 후 이용할 수 있습니다.");
@@ -233,6 +266,10 @@ const GymDetail = () => {
 
   const isSuspended = gym.suspendedUntil && new Date(gym.suspendedUntil) > new Date();
   const priceDisplay = gym.priceMin ? `월 ${gym.priceMin.toLocaleString()}원` : "가격문의";
+  // 관장 본인이 자기 체육관을 볼 때는 문의 버튼이 의미 없음(백엔드도 본인 문의는 400)
+  const isOwnGym = !!(user && gym.ownerId && user.id === gym.ownerId);
+  // 미클레임 체육관(ownerId 없음)은 채팅 상대가 없으므로 전화만, 전화도 없으면 문의 수단 자체가 없어 버튼을 숨김
+  const canContactGym = !isOwnGym && !!(gym.phone || gym.ownerId);
 
   return (
     <div className="min-h-screen bg-background pb-24 pt-16">
@@ -348,6 +385,18 @@ const GymDetail = () => {
                 </Button>
               )}
             </div>
+
+            {canContactGym && (
+              <Button
+                variant="outline"
+                size="lg"
+                className="w-full mt-3"
+                onClick={() => setContactDialogOpen(true)}
+              >
+                <MessageCircle className="w-4 h-4 mr-1.5" />
+                관장에게 문의
+              </Button>
+            )}
 
             {gym.ownerId && myMembershipStatus !== "ACTIVE" && (
               <div className="mt-3 flex items-center justify-between gap-3">
@@ -637,6 +686,47 @@ const GymDetail = () => {
           </Button>
         </div>
       </div>
+
+      <Dialog open={contactDialogOpen} onOpenChange={setContactDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{gym.name}에 문의하기</DialogTitle>
+            <DialogDescription>전화 또는 채팅으로 문의할 수 있어요.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            {gym.phone ? (
+              <Button
+                asChild
+                variant="outline"
+                className="w-full justify-start h-12"
+                onClick={() => setContactDialogOpen(false)}
+              >
+                <a href={`tel:${gym.phone}`}>
+                  <Phone className="w-4 h-4 mr-2" />
+                  전화로 문의하기
+                </a>
+              </Button>
+            ) : (
+              <p className="text-xs text-muted-foreground px-1">등록된 전화번호가 없습니다.</p>
+            )}
+            {gym.ownerId && (
+              <Button
+                variant="gradient"
+                className="w-full justify-start h-12"
+                disabled={isCreatingRoom}
+                onClick={handleStartChat}
+              >
+                {isCreatingRoom ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                )}
+                채팅으로 문의하기
+              </Button>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
