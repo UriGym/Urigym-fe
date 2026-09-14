@@ -1,6 +1,7 @@
 export { apiClient } from './client';
 export { authApi } from './auth';
 export { gymsApi } from './gyms';
+export { chatApi } from './chat';
 export { attendanceApi } from './attendance';
 export { ownerApi } from './owner';
 export { adminApi } from './admin';
