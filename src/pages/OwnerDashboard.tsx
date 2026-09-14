@@ -42,12 +42,14 @@ import {
 import { toast } from "sonner";
 import { ownerApi } from "@/api/owner";
 import { gymsApi } from "@/api/gyms";
+import { chatApi } from "@/api/chat";
 import { GYM_CATEGORIES } from "@/components/gym/CategoryFilter";
 import { ImageUploadField } from "@/components/common/ImageUploadField";
 import { AddressSearchField } from "@/components/common/AddressSearchField";
 import { loadKakaoMaps } from "@/lib/kakaoMap";
 import type { AddressResult } from "@/lib/daumPostcode";
 import type {
+  ChatRoomResponse,
   EventResponse,
   GymMemberResponse,
   GymOwnerRequest,
@@ -57,6 +59,8 @@ import type {
   OwnerGymStats,
   ReviewResponse,
 } from "@/api/types";
+
+const CHAT_POLL_INTERVAL_MS = 15000;
 
 const ABSENT_DAYS = 7;
 
@@ -84,6 +88,8 @@ const OwnerDashboard = () => {
   const [reviews, setReviews] = useState<ReviewResponse[]>([]);
   const [events, setEvents] = useState<EventResponse[]>([]);
   const [plans, setPlans] = useState<MembershipPlanResponse[]>([]);
+  const [chatRooms, setChatRooms] = useState<ChatRoomResponse[]>([]);
+  const [activeTab, setActiveTab] = useState("members");
   const [isLoading, setIsLoading] = useState(true);
 
   const selectedGym = useMemo(
@@ -103,6 +109,11 @@ const OwnerDashboard = () => {
     () => members.filter((member) => member.status === "ACTIVE"),
     [members]
   );
+  // /chat/rooms는 gym 단위 필터가 없는 전체 목록이라 프론트에서 선택된 체육관만 골라낸다
+  const gymChatRooms = useMemo(
+    () => chatRooms.filter((room) => room.gymId === selectedGymId),
+    [chatRooms, selectedGymId]
+  );
 
   const loadGyms = useCallback(async () => {
     try {
@@ -118,20 +129,23 @@ const OwnerDashboard = () => {
 
   const loadGymData = useCallback(async (gymId: string) => {
     try {
-      const [gymStats, memberList, absentList, reviewPage, eventList, planList] = await Promise.all([
-        ownerApi.getStats(gymId, ABSENT_DAYS),
-        ownerApi.getMembers(gymId),
-        ownerApi.getAbsentMembers(gymId, ABSENT_DAYS),
-        ownerApi.getReviews(gymId, 0, 20),
-        gymsApi.getEvents(gymId),
-        gymsApi.getMembershipPlans(gymId),
-      ]);
+      const [gymStats, memberList, absentList, reviewPage, eventList, planList, chatRoomList] =
+        await Promise.all([
+          ownerApi.getStats(gymId, ABSENT_DAYS),
+          ownerApi.getMembers(gymId),
+          ownerApi.getAbsentMembers(gymId, ABSENT_DAYS),
+          ownerApi.getReviews(gymId, 0, 20),
+          gymsApi.getEvents(gymId),
+          gymsApi.getMembershipPlans(gymId),
+          chatApi.getChatRooms(),
+        ]);
       setStats(gymStats ?? null);
       setMembers(memberList ?? []);
       setAbsentMembers(absentList ?? []);
       setReviews(reviewPage?.content ?? []);
       setEvents(eventList ?? []);
       setPlans(planList ?? []);
+      setChatRooms(chatRoomList ?? []);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "데이터를 불러오지 못했습니다.");
     }
@@ -144,6 +158,22 @@ const OwnerDashboard = () => {
   useEffect(() => {
     if (selectedGymId) loadGymData(selectedGymId);
   }, [selectedGymId, loadGymData]);
+
+  // "문의" 탭이 열려있는 동안만 채팅방 목록을 15초 간격으로 재조회 — 다른 탭에선 폴링하지 않는다
+  useEffect(() => {
+    if (activeTab !== "chat") return;
+    const refreshChatRooms = () => {
+      chatApi
+        .getChatRooms()
+        .then((rooms) => setChatRooms(rooms ?? []))
+        .catch(() => {
+          // 폴링 실패는 조용히 — 다음 주기에 재시도됨
+        });
+    };
+    refreshChatRooms();
+    const interval = setInterval(refreshChatRooms, CHAT_POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [activeTab]);
 
   const refresh = () => {
     loadGyms();
@@ -227,13 +257,14 @@ const OwnerDashboard = () => {
               <GroupMessageDialog gymId={selectedGymId!} members={members} />
             </div>
 
-            <Tabs defaultValue="members">
-              <TabsList className="w-full grid grid-cols-3 sm:grid-cols-6 bg-secondary/50 h-auto">
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="w-full grid grid-cols-3 sm:grid-cols-7 bg-secondary/50 h-auto">
                 <TabsTrigger value="members">관원</TabsTrigger>
                 <TabsTrigger value="plans">회원권</TabsTrigger>
                 <TabsTrigger value="absent">미출석</TabsTrigger>
                 <TabsTrigger value="reviews">리뷰</TabsTrigger>
                 <TabsTrigger value="events">이벤트</TabsTrigger>
+                <TabsTrigger value="chat">문의</TabsTrigger>
                 <TabsTrigger value="gym">체육관</TabsTrigger>
               </TabsList>
 
@@ -435,6 +466,38 @@ const OwnerDashboard = () => {
                           </Button>
                         </div>
                       </div>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="chat" className="mt-4 space-y-4">
+                {gymChatRooms.length === 0 ? (
+                  <EmptyBlock message="아직 문의가 없습니다." />
+                ) : (
+                  <div className="gym-card divide-y divide-border">
+                    {gymChatRooms.map((room) => (
+                      <button
+                        key={room.id}
+                        type="button"
+                        onClick={() => navigate(`/chat/${room.id}`)}
+                        className="w-full flex items-center gap-3 p-4 text-left hover:bg-secondary/50 transition-colors"
+                      >
+                        <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                          <span className="text-sm font-medium">
+                            {room.counterpartName?.[0] ?? "?"}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{room.counterpartName}</p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {room.lastMessage || "대화를 시작해보세요"}
+                          </p>
+                        </div>
+                        {room.unreadCount > 0 && (
+                          <Badge className="shrink-0">{room.unreadCount}</Badge>
+                        )}
+                      </button>
                     ))}
                   </div>
                 )}
