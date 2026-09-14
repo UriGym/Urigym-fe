@@ -15,6 +15,7 @@ import MyGyms from "./pages/MyGyms";
 import MyFavorites from "./pages/MyFavorites";
 import AttendanceHistory from "./pages/AttendanceHistory";
 import OwnerDashboard from "./pages/OwnerDashboard";
+import ChatRoom from "./pages/ChatRoom";
 import OwnerApplication from "./pages/OwnerApplication";
 import AdminDashboard from "./pages/AdminDashboard";
 import Support from "./pages/Support";
@@ -104,6 +105,14 @@ const App = () => (
                 element={
                   <RoleRoute>
                     <Support />
+                  </RoleRoute>
+                }
+              />
+              <Route
+                path="/chat/:roomId"
+                element={
+                  <RoleRoute>
+                    <ChatRoom />
                   </RoleRoute>
                 }
               />
