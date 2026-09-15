@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Bell, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,9 +12,11 @@ import { cn } from "@/lib/utils";
 import type { NotificationResponse } from "@/api/types";
 
 export const NotificationBell = () => {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<NotificationResponse[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [open, setOpen] = useState(false);
 
   const refreshUnreadCount = useCallback(async () => {
     try {
@@ -27,8 +30,9 @@ export const NotificationBell = () => {
     refreshUnreadCount();
   }, [refreshUnreadCount]);
 
-  const loadNotifications = async (open: boolean) => {
-    if (!open) return;
+  const loadNotifications = async (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (!nextOpen) return;
     setIsLoading(true);
     try {
       const page = await notificationsApi.list(0, 10);
@@ -40,21 +44,30 @@ export const NotificationBell = () => {
     }
   };
 
-  const handleRead = async (notification: NotificationResponse) => {
-    if (notification.isRead) return;
-    try {
-      await notificationsApi.markAsRead(notification.id);
-      setNotifications((prev) =>
-        prev.map((item) => (item.id === notification.id ? { ...item, isRead: true } : item))
-      );
-      setUnreadCount((count) => Math.max(0, count - 1));
-    } catch {
-      // Ignore — the notification stays unread and can be retried.
+  const handleNotificationClick = (notification: NotificationResponse) => {
+    setOpen(false);
+    if (notification.type === "MESSAGE" && notification.relatedRoomId) {
+      navigate(`/chat/${notification.relatedRoomId}`);
+    }
+    if (!notification.isRead) {
+      // Fire-and-forget: navigation shouldn't wait on this round-trip. Failure leaves
+      // the notification unread, which is safe — it can just be retried later.
+      notificationsApi
+        .markAsRead(notification.id)
+        .then(() => {
+          setNotifications((prev) =>
+            prev.map((item) => (item.id === notification.id ? { ...item, isRead: true } : item))
+          );
+          setUnreadCount((count) => Math.max(0, count - 1));
+        })
+        .catch(() => {
+          // Ignore — the notification stays unread and can be retried.
+        });
     }
   };
 
   return (
-    <DropdownMenu onOpenChange={loadNotifications}>
+    <DropdownMenu open={open} onOpenChange={loadNotifications}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="relative" aria-label="알림">
           <Bell className="w-5 h-5" />
@@ -80,7 +93,7 @@ export const NotificationBell = () => {
           notifications.map((notification) => (
             <button
               key={notification.id}
-              onClick={() => handleRead(notification)}
+              onClick={() => handleNotificationClick(notification)}
               className={cn(
                 "w-full text-left px-3 py-2.5 border-b border-border last:border-0 hover:bg-secondary/50 transition-colors",
                 !notification.isRead && "bg-primary/5"
