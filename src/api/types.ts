@@ -150,6 +150,7 @@ export interface NotificationResponse {
   title: string;
   body?: string;
   relatedGymId?: string | null;
+  relatedRoomId?: string | null;
   isRead: boolean;
   createdAt: string;
 }
