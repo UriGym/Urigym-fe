@@ -16,6 +16,7 @@ import {
   Pencil,
   ArrowLeft,
   Tag,
+  ChevronsUpDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import {
   Dialog,
   DialogContent,
@@ -47,6 +57,7 @@ import { GYM_CATEGORIES } from "@/components/gym/CategoryFilter";
 import { ImageUploadField } from "@/components/common/ImageUploadField";
 import { AddressSearchField } from "@/components/common/AddressSearchField";
 import { loadKakaoMaps } from "@/lib/kakaoMap";
+import { getRegion, REGION_ORDER } from "@/lib/region";
 import type { AddressResult } from "@/lib/daumPostcode";
 import type {
   ChatRoomResponse,
@@ -91,6 +102,7 @@ const OwnerDashboard = () => {
   const [chatRooms, setChatRooms] = useState<ChatRoomResponse[]>([]);
   const [activeTab, setActiveTab] = useState("members");
   const [isLoading, setIsLoading] = useState(true);
+  const [gymPickerOpen, setGymPickerOpen] = useState(false);
 
   const selectedGym = useMemo(
     () => gyms.find((gym) => gym.id === selectedGymId) ?? null,
@@ -114,6 +126,52 @@ const OwnerDashboard = () => {
     () => chatRooms.filter((room) => room.gymId === selectedGymId),
     [chatRooms, selectedGymId]
   );
+
+  // 체육관 하나에 문의자별로 채팅방이 여러 개일 수 있어 gymId 기준으로 안읽은 수를 합산하고 최신 메시지 시각을 뽑는다
+  const gymChatSummary = useMemo(() => {
+    const map = new Map<string, { unreadCount: number; lastMessageAt: string | null }>();
+    for (const room of chatRooms) {
+      const entry = map.get(room.gymId) ?? { unreadCount: 0, lastMessageAt: null };
+      entry.unreadCount += room.unreadCount;
+      if (room.lastMessageAt && (!entry.lastMessageAt || room.lastMessageAt > entry.lastMessageAt)) {
+        entry.lastMessageAt = room.lastMessageAt;
+      }
+      map.set(room.gymId, entry);
+    }
+    return map;
+  }, [chatRooms]);
+
+  const totalUnreadCount = useMemo(
+    () =>
+      Array.from(gymChatSummary.values()).reduce((sum, summary) => sum + summary.unreadCount, 0),
+    [gymChatSummary]
+  );
+
+  // 안읽은 메시지가 있는 체육관만 최근 메시지순으로 — 체육관 선택 UI 최상단 "새 메시지" 섹션용
+  const unreadGyms = useMemo(
+    () =>
+      gyms
+        .map((gym) => ({ gym, summary: gymChatSummary.get(gym.id) }))
+        .filter((entry): entry is { gym: GymResponse; summary: { unreadCount: number; lastMessageAt: string | null } } =>
+          (entry.summary?.unreadCount ?? 0) > 0
+        )
+        .sort((a, b) => (b.summary.lastMessageAt ?? "").localeCompare(a.summary.lastMessageAt ?? "")),
+    [gyms, gymChatSummary]
+  );
+
+  // 지역별 그룹 — 안읽은 체육관도 자기 지역 그룹에 그대로 포함 (지역 탐색은 별개 기능이라 유지)
+  const gymsByRegion = useMemo(() => {
+    const map = new Map<string, GymResponse[]>();
+    for (const gym of gyms) {
+      const region = getRegion(gym.address);
+      const bucket = map.get(region) ?? [];
+      bucket.push(gym);
+      map.set(region, bucket);
+    }
+    return REGION_ORDER.map((region) => ({ region, gyms: map.get(region) ?? [] })).filter(
+      (group) => group.gyms.length > 0
+    );
+  }, [gyms]);
 
   const loadGyms = useCallback(async () => {
     try {
@@ -159,9 +217,8 @@ const OwnerDashboard = () => {
     if (selectedGymId) loadGymData(selectedGymId);
   }, [selectedGymId, loadGymData]);
 
-  // "문의" 탭이 열려있는 동안만 채팅방 목록을 15초 간격으로 재조회 — 다른 탭에선 폴링하지 않는다
+  // 채팅방 목록을 15초 간격으로 재조회 — 다른 탭을 보고 있어도 헤더 체육관 선택 UI의 안읽은 배지가 갱신되도록 탭 무관하게 항상 돈다
   useEffect(() => {
-    if (activeTab !== "chat") return;
     const refreshChatRooms = () => {
       chatApi
         .getChatRooms()
@@ -173,7 +230,7 @@ const OwnerDashboard = () => {
     refreshChatRooms();
     const interval = setInterval(refreshChatRooms, CHAT_POLL_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, [activeTab]);
+  }, []);
 
   const refresh = () => {
     loadGyms();
@@ -200,18 +257,73 @@ const OwnerDashboard = () => {
             <h1 className="text-lg font-bold truncate">관장 대시보드</h1>
           </div>
           {gyms.length > 0 && (
-            <Select value={selectedGymId ?? ""} onValueChange={setSelectedGymId}>
-              <SelectTrigger className="w-40 shrink-0">
-                <SelectValue placeholder="체육관 선택" />
-              </SelectTrigger>
-              <SelectContent>
-                {gyms.map((gym) => (
-                  <SelectItem key={gym.id} value={gym.id}>
-                    {gym.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={gymPickerOpen} onOpenChange={setGymPickerOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={gymPickerOpen}
+                  className="w-40 shrink-0 justify-between gap-1 px-3"
+                >
+                  <span className="truncate">{selectedGym?.name ?? "체육관 선택"}</span>
+                  <span className="flex items-center gap-1 shrink-0">
+                    {totalUnreadCount > 0 && (
+                      <Badge className="h-5 min-w-5 justify-center rounded-full px-1">
+                        {totalUnreadCount}
+                      </Badge>
+                    )}
+                    <ChevronsUpDown className="w-4 h-4 opacity-50" />
+                  </span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-72 p-0">
+                <Command>
+                  <CommandInput placeholder="체육관 검색" />
+                  <CommandList>
+                    <CommandEmpty>검색 결과가 없습니다.</CommandEmpty>
+                    {unreadGyms.length > 0 && (
+                      <CommandGroup heading="새 메시지">
+                        {unreadGyms.map(({ gym, summary }) => (
+                          <CommandItem
+                            key={gym.id}
+                            value={`${gym.name}-${gym.id}`}
+                            onSelect={() => {
+                              setSelectedGymId(gym.id);
+                              setGymPickerOpen(false);
+                            }}
+                          >
+                            <span className="flex-1 truncate">{gym.name}</span>
+                            <Badge className="ml-2 shrink-0">{summary.unreadCount}</Badge>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    )}
+                    {gymsByRegion.map(({ region, gyms: regionGyms }) => (
+                      <CommandGroup key={region} heading={region}>
+                        {regionGyms.map((gym) => {
+                          const unreadCount = gymChatSummary.get(gym.id)?.unreadCount ?? 0;
+                          return (
+                            <CommandItem
+                              key={gym.id}
+                              value={`${gym.name}-${gym.id}`}
+                              onSelect={() => {
+                                setSelectedGymId(gym.id);
+                                setGymPickerOpen(false);
+                              }}
+                            >
+                              <span className="flex-1 truncate">{gym.name}</span>
+                              {unreadCount > 0 && (
+                                <Badge className="ml-2 shrink-0">{unreadCount}</Badge>
+                              )}
+                            </CommandItem>
+                          );
+                        })}
+                      </CommandGroup>
+                    ))}
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           )}
         </div>
       </header>
