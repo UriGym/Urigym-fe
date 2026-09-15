@@ -10,7 +10,15 @@ import type { ChatMessageResponse, ChatRoomResponse } from "@/api/types";
 
 const POLL_INTERVAL_MS = 3000;
 
+// 라우트 엘리먼트가 재사용되어 roomId 파라미터만 바뀌면(예: 다른 체육관 알림 클릭) 컴포넌트가
+// 리마운트되지 않는다 — key={roomId}로 강제 리마운트시켜 messages/room 등 이전 방 상태가
+// 새 방에 잔류하는 문제를 근본적으로 막는다.
 const ChatRoom = () => {
+  const { roomId } = useParams();
+  return <ChatRoomView key={roomId} />;
+};
+
+const ChatRoomView = () => {
   const { roomId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
