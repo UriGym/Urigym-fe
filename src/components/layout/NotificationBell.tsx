@@ -49,6 +49,13 @@ export const NotificationBell = () => {
     if (notification.type === "MESSAGE" && notification.relatedRoomId) {
       navigate(`/chat/${notification.relatedRoomId}`);
     }
+    // 관원 등록 초대 알림(SYSTEM 타입 중 이 제목만 해당 — GymMemberService.addMember에서 고정
+    // 발송)만 /mypage/gyms로 보낸다. 같은 SYSTEM+relatedGymId 조합을 쓰는 다른 알림(관장에게
+    // 가는 "초대를 수락/거절했습니다", "새 등록 신청이 있습니다" 등)은 관원용 수락 화면과
+    // 무관하므로 제목으로 정확히 구분한다.
+    if (notification.type === "SYSTEM" && notification.title === "체육관 등록 초대가 도착했습니다.") {
+      navigate("/mypage/gyms");
+    }
     if (!notification.isRead) {
       // Fire-and-forget: navigation shouldn't wait on this round-trip. Failure leaves
       // the notification unread, which is safe — it can just be retried later.
