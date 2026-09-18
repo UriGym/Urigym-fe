@@ -175,7 +175,7 @@ const OwnerDashboard = () => {
 
   const loadGyms = useCallback(async () => {
     try {
-      const myGyms = (await ownerApi.getMyGyms()) ?? [];
+      const myGyms = (await ownerApi.getMyGyms())?.content ?? [];
       setGyms(myGyms);
       setSelectedGymId((current) => current ?? myGyms[0]?.id ?? null);
     } catch (error) {
