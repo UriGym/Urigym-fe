@@ -197,7 +197,11 @@ const OwnerDashboard = () => {
     try {
       const nextPage = gymsPage + 1;
       const page = await ownerApi.getMyGyms(nextPage);
-      setGyms((prev) => [...prev, ...(page?.content ?? [])]);
+      setGyms((prev) => {
+        // 백엔드 정렬 tie-breaker 부재로 페이지 경계에서 중복이 나타날 수 있어 id 기준 방어적 dedup
+        const seen = new Set(prev.map((gym) => gym.id));
+        return [...prev, ...(page?.content ?? []).filter((gym) => !seen.has(gym.id))];
+      });
       setGymsPage(nextPage);
       setHasMoreGyms(page?.last === false);
     } catch (error) {
