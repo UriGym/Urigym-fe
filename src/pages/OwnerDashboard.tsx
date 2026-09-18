@@ -92,6 +92,9 @@ const OwnerDashboard = () => {
   const navigate = useNavigate();
 
   const [gyms, setGyms] = useState<GymResponse[]>([]);
+  const [gymsPage, setGymsPage] = useState(0);
+  const [hasMoreGyms, setHasMoreGyms] = useState(false);
+  const [isLoadingMoreGyms, setIsLoadingMoreGyms] = useState(false);
   const [selectedGymId, setSelectedGymId] = useState<string | null>(null);
   const [stats, setStats] = useState<OwnerGymStats | null>(null);
   const [members, setMembers] = useState<GymMemberResponse[]>([]);
@@ -175,8 +178,11 @@ const OwnerDashboard = () => {
 
   const loadGyms = useCallback(async () => {
     try {
-      const myGyms = (await ownerApi.getMyGyms()) ?? [];
+      const page = await ownerApi.getMyGyms();
+      const myGyms = page?.content ?? [];
       setGyms(myGyms);
+      setGymsPage(0);
+      setHasMoreGyms(page?.last === false);
       setSelectedGymId((current) => current ?? myGyms[0]?.id ?? null);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "체육관을 불러오지 못했습니다.");
@@ -184,6 +190,26 @@ const OwnerDashboard = () => {
       setIsLoading(false);
     }
   }, []);
+
+  // "더 보기" — 100개(기본 size) 넘게 등록한 관장의 나머지 지점을 이어붙여 불러온다.
+  const loadMoreGyms = useCallback(async () => {
+    setIsLoadingMoreGyms(true);
+    try {
+      const nextPage = gymsPage + 1;
+      const page = await ownerApi.getMyGyms(nextPage);
+      setGyms((prev) => {
+        // 백엔드 정렬 tie-breaker 부재로 페이지 경계에서 중복이 나타날 수 있어 id 기준 방어적 dedup
+        const seen = new Set(prev.map((gym) => gym.id));
+        return [...prev, ...(page?.content ?? []).filter((gym) => !seen.has(gym.id))];
+      });
+      setGymsPage(nextPage);
+      setHasMoreGyms(page?.last === false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "체육관을 더 불러오지 못했습니다.");
+    } finally {
+      setIsLoadingMoreGyms(false);
+    }
+  }, [gymsPage]);
 
   const loadGymData = useCallback(async (gymId: string) => {
     try {
@@ -322,6 +348,23 @@ const OwnerDashboard = () => {
                     ))}
                   </CommandList>
                 </Command>
+                {hasMoreGyms && (
+                  <div className="border-t border-border p-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-center text-xs text-muted-foreground"
+                      onClick={loadMoreGyms}
+                      disabled={isLoadingMoreGyms}
+                    >
+                      {isLoadingMoreGyms ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        "더 보기"
+                      )}
+                    </Button>
+                  </div>
+                )}
               </PopoverContent>
             </Popover>
           )}

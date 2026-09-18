@@ -20,7 +20,7 @@ interface HeaderProps {
 }
 
 export const Header = ({ title = "우리짐", showLocation = true, locationLabel }: HeaderProps) => {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, isLoading, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -46,7 +46,7 @@ export const Header = ({ title = "우리짐", showLocation = true, locationLabel
           )}
         </div>
         <div className="flex items-center gap-2">
-          {isAuthenticated ? (
+          {isLoading ? null : isAuthenticated ? (
             <>
               <NotificationBell />
               <DropdownMenu>

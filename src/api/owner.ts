@@ -19,8 +19,9 @@ import type {
 } from './types';
 
 export const ownerApi = {
-  // 체육관
-  getMyGyms: async () => (await apiClient.get<GymResponse[]>('/owner/gyms')).data,
+  // 체육관 — 관장 1명당 지점 수는 실사용상 수십 개 수준이라 size를 넉넉히 잡아 한 페이지로 커버한다
+  getMyGyms: async (page = 0, size = 100) =>
+    (await apiClient.get<PageResponse<GymResponse>>(`/owner/gyms?page=${page}&size=${size}`)).data,
 
   createGym: async (data: GymOwnerRequest) =>
     (await apiClient.post<GymResponse>('/owner/gyms', data)).data,

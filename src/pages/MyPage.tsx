@@ -20,6 +20,7 @@ import {
   Building2,
   ShieldCheck,
   Heart,
+  Loader2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -48,16 +49,26 @@ interface MenuItem {
 
 const MyPage = () => {
   const navigate = useNavigate();
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, isLoading: isAuthLoading, logout } = useAuth();
 
   const [stats, setStats] = useState({ gyms: 0, attendances: 0 });
+  // "등록 체육관" 카운트(stats.gyms)는 ACTIVE 멤버십만 세는 출석용 API 기준을 유지하고,
+  // 진입 버튼 노출 여부는 INVITED/PENDING 등 전체 멤버십 존재 여부로 따로 판단한다 —
+  // 초대만 받고 아직 수락 전인 사용자도 /mypage/gyms로 들어갈 수 있어야 하기 때문.
+  const [hasAnyMembership, setHasAnyMembership] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    Promise.all([membershipsApi.getMyGyms(), attendanceApi.getTotalCount()])
-      .then(([gyms, count]) => setStats({ gyms: gyms?.length ?? 0, attendances: count ?? 0 }))
-      .catch(() => setStats({ gyms: 0, attendances: 0 }));
+    Promise.all([membershipsApi.getMyGyms(), membershipsApi.getMine(), attendanceApi.getTotalCount()])
+      .then(([activeGyms, allMemberships, count]) => {
+        setStats({ gyms: activeGyms?.length ?? 0, attendances: count ?? 0 });
+        setHasAnyMembership((allMemberships?.length ?? 0) > 0);
+      })
+      .catch(() => {
+        setStats({ gyms: 0, attendances: 0 });
+        setHasAnyMembership(false);
+      });
   }, [isAuthenticated]);
 
   const handleLogout = () => {
@@ -101,6 +112,14 @@ const MyPage = () => {
     },
   ];
 
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="pt-4 px-4 space-y-6">
         <div className="gym-card p-5 animate-fade-in">
@@ -129,7 +148,7 @@ const MyPage = () => {
                 </div>
               </div>
 
-              {stats.gyms === 0 ? (
+              {!hasAnyMembership ? (
                 <div className="mt-6 pt-6 border-t border-border text-center">
                   <p className="text-sm text-muted-foreground mb-3">
                     등록된 체육관이 없습니다. 운동하러 가기!

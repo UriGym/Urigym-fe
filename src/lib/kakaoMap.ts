@@ -34,8 +34,14 @@ export function loadKakaoMaps(): Promise<typeof window.kakao.maps> {
 
     script.addEventListener('load', () => window.kakao.maps.load(() => resolve(window.kakao.maps)));
     script.addEventListener('error', () => {
+      // Reset the module-level cache AND remove the dead <script> tag itself — a script
+      // element that already fired "error" never fires load/error again for listeners
+      // attached later, so leaving it in the DOM would make every future call reuse a
+      // tag that can never resolve/reject again.
       loaderPromise = null;
-      reject(new Error('카카오맵 SDK를 불러오지 못했습니다. API 키와 등록 도메인을 확인해주세요.'));
+      script.remove();
+      console.error('카카오맵 SDK를 불러오지 못했습니다. API 키와 등록 도메인을 확인해주세요.');
+      reject(new Error('지도를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.'));
     });
   });
 

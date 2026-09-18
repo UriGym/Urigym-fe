@@ -39,7 +39,8 @@ export const GymMap = ({ markers = [], center, onMarkerClick, onRecenter, classN
   // Create the map once the SDK is available.
   useEffect(() => {
     if (!isKakaoKeyConfigured()) {
-      setError("카카오맵 API 키가 설정되지 않았습니다. .env 파일의 VITE_KAKAO_MAP_KEY를 확인해주세요.");
+      console.error("카카오맵 API 키가 설정되지 않았습니다. .env 파일의 VITE_KAKAO_MAP_KEY를 확인해주세요.");
+      setError("지도를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.");
       return;
     }
 
