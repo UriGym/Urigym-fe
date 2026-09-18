@@ -1,6 +1,9 @@
 import { toast } from 'sonner';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+// 접속 호스트 기준으로 백엔드 주소를 계산: localhost로 열든 LAN IP로 열든(폰 테스트 등)
+// 항상 지금 접속한 호스트의 8080 포트를 가리킨다. VITE_API_URL은 HTTPS 백엔드 등
+// 특수 상황에서만 오버라이드하는 용도로 남겨둔다.
+const API_BASE_URL = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8080/api`;
 
 interface ApiResponse<T> {
   success: boolean;
