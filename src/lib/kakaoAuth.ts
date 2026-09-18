@@ -60,7 +60,10 @@ function loadSdk(): Promise<void> {
 
     script.addEventListener("load", onReady);
     script.addEventListener("error", () => {
+      // 실패한 <script> 태그는 이후 load/error를 다시 발생시키지 않으므로 DOM에서 제거해야
+      // 다음 호출이 새 <script>로 재시도할 수 있다.
       loaderPromise = null;
+      script.remove();
       reject(new Error("카카오 SDK를 불러오지 못했습니다."));
     });
   });
