@@ -258,7 +258,14 @@ const OwnerDashboard = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // 관장 데이터(관원/공지/이벤트 등)만 다시 불러온다 — 체육관 목록·콤보박스와는 무관한 이벤트에서 쓴다.
+  // "더 보기"로 100개 초과 지점을 누적해둔 상태에서 이걸로 목록까지 리셋하면 안 된다.
   const refresh = () => {
+    if (selectedGymId) loadGymData(selectedGymId);
+  };
+
+  // 체육관 목록 자체가 바뀌는 경우(신규 등록/수정)에만 loadGyms까지 같이 호출한다.
+  const refreshWithGyms = () => {
     loadGyms();
     if (selectedGymId) loadGymData(selectedGymId);
   };
@@ -381,7 +388,7 @@ const OwnerDashboard = () => {
                 체육관을 등록하면 관원 관리와 공지 발송을 시작할 수 있습니다.
               </p>
             </div>
-            <GymFormDialog onSaved={refresh} />
+            <GymFormDialog onSaved={refreshWithGyms} />
           </div>
         ) : (
           <>
@@ -660,8 +667,8 @@ const OwnerDashboard = () => {
 
               <TabsContent value="gym" className="mt-4 space-y-4">
                 <div className="flex gap-2">
-                  <GymFormDialog onSaved={refresh} />
-                  {selectedGym && <GymFormDialog gym={selectedGym} onSaved={refresh} />}
+                  <GymFormDialog onSaved={refreshWithGyms} />
+                  {selectedGym && <GymFormDialog gym={selectedGym} onSaved={refreshWithGyms} />}
                 </div>
                 {selectedGym && (
                   <div className="gym-card p-4 space-y-2 text-sm">
