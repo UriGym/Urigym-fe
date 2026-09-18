@@ -51,7 +51,11 @@ export const NotificationBell = () => {
     }
     // 관원 등록 초대 알림만 /mypage/gyms로 보낸다. 같은 SYSTEM+relatedGymId 조합을 쓰는
     // 다른 알림(관장에게 가는 초대 수락/거절, 등록 신청 등)은 subType으로 구분한다.
-    if (notification.subType === "INVITE_RECEIVED") {
+    // subType 필드 배포 이전에 생성된 미읽음 알림은 subType이 없으므로 제목으로 한 번 더 잡아준다.
+    const isInviteReceived =
+      notification.subType === "INVITE_RECEIVED" ||
+      (!notification.subType && notification.title === "체육관 등록 초대가 도착했습니다.");
+    if (isInviteReceived) {
       navigate("/mypage/gyms");
     }
     if (!notification.isRead) {
