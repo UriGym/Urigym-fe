@@ -20,6 +20,7 @@ import {
   Building2,
   ShieldCheck,
   Heart,
+  Loader2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -48,7 +49,7 @@ interface MenuItem {
 
 const MyPage = () => {
   const navigate = useNavigate();
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, isLoading: isAuthLoading, logout } = useAuth();
 
   const [stats, setStats] = useState({ gyms: 0, attendances: 0 });
   // "등록 체육관" 카운트(stats.gyms)는 ACTIVE 멤버십만 세는 출석용 API 기준을 유지하고,
@@ -110,6 +111,14 @@ const MyPage = () => {
       ],
     },
   ];
+
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="pt-4 px-4 space-y-6">
