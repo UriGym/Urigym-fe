@@ -144,9 +144,18 @@ export interface ReportResponse {
 
 export type NotificationType = 'ANNOUNCEMENT' | 'MESSAGE' | 'SYSTEM';
 
+export type NotificationSubType =
+  | 'INVITE_RECEIVED'
+  | 'INVITE_ACCEPTED'
+  | 'INVITE_DECLINED'
+  | 'JOIN_REQUESTED'
+  | 'JOIN_APPROVED'
+  | 'JOIN_REJECTED';
+
 export interface NotificationResponse {
   id: string;
   type: NotificationType;
+  subType?: NotificationSubType | null;
   title: string;
   body?: string;
   relatedGymId?: string | null;
